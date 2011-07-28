@@ -128,6 +128,8 @@ class NCARDatabase(object):
       for var in variables:
         if var in self._variable_list:
           var_str += var + ", "
+        else:
+          print >>sys.stderr, "Could not add variable %s, does not exist" % var
 
     var_str = var_str.rstrip(', ')
     sql_command += var_str + " FROM raf_lrt "
@@ -175,6 +177,7 @@ class NCARDatabase(object):
       data = cursor.fetchall()
     except Exception, e:
       print "SQL Command failed: " + sql_command
+      self.reconnect()
 
     cursor.close()
 
