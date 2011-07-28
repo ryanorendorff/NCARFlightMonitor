@@ -1,0 +1,12 @@
+Installation
+============
+
+Scripts accessing the PSQL database (the database that Aeros connects to) need to install the psycopg2 python module. This can be easily done at the command line by issuing the following command.
+
+        easy_install psycopg2
+
+Files
+=====
+- `live_watch.py`: Watches for when a plane takes off, records data from the flight. Will also include data quality algorithms.
+- `parse_O3.py`: Determines the data types in an fo3 file and can replace all blank cells with any value (useful for MATLAB)
+- `NcarChem`: Module for all chem code.
