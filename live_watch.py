@@ -92,8 +92,8 @@ if __name__ == "__main__":
 
   NCARManager = NCARDatabaseManager()
   NCARManager.start()
-  server = NCARManager.Server(database="C130", simulate_time = datetime.datetime(2011,7,27,21,07,00))
-  #server = NCARManager.Server(database="C130")
+  #server = NCARManager.Server(database="C130", simulate_time = datetime.datetime(2011,7,27,21,07,00))
+  server = NCARManager.Server(database="C130")
 
 
   while(not flying(server)):
