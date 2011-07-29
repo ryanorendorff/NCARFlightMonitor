@@ -20,46 +20,40 @@ from collections import OrderedDict
 ## Functions
 ## --------------------------------------------------------------------------
 
-def createOrderedDict(variables):
+def createOrderedList(variables):
   var_list = []
   for var in variables:
     var_list.append((var, NCARVar(var)))
 
-  return OrderedDict(var_list)
+  return var_list
 
 
 ## --------------------------------------------------------------------------
 ## Classes
 ## --------------------------------------------------------------------------
 
-class NCARVarSet():
+class NCARVarSet(OrderedDict):
   def __init__(self, *variables):
-    self._vars = None
-    self._str = str(variables)
+    self._str = ""
     self._len = 0
+
 
     if 'datetime' not in variables:
       variables = ('datetime',) + variables
+    self._str = str(variables)
 
-    self._vars = createOrderedDict(variables)
+    super(NCARVarSet,self).__init__(createOrderedList(variables))
 
 
   def __str__(self):
     return self._str
 
-  def __iter__(self):
-    for var in self._vars:
-      yield self._vars[var]
-
-  def keys(self):
-    return self._vars.keys()
-
   def addData(self, data):
     if len(data) != 0:
       self._len += len(data)
       pos = 1
-      for var in self._vars:
-        self._vars[var].addData([(column[0], column[pos]) for column in data])
+      for var in OrderedDict.__iter__(self):
+        OrderedDict.__getitem__(self,var).addData([(column[0], column[pos]) for column in data])
         pos += 1
 
   def csv(self):
@@ -71,39 +65,40 @@ class NCARVarSet():
     output += '\n'
 
     for counter in range(self._len):
-      line = self._vars['datetime'][counter].strftime("%Y,%m,%d,%H,%M,%S")
-      for var in self._vars:
+      line = OrderedDict.__getitem__(self,'datetime')[counter].strftime("%Y,%m,%d,%H,%M,%S")
+      for var in OrderedDict.__iter__(self):
         if var == "datetime":
           continue
-        line += ',' + str(self._vars[var][counter])
+        line += ',' + str(OrderedDict.__getitem__(self,var)[counter])
       line += '\n'
       output += line
 
     return output.rstrip('\n')
 
 
-class NCARVar():
+class NCARVar(OrderedDict):
 
   def __init__(self, name=None):
     self._name = name.lower()
-    self._data = OrderedDict()
     self._order = {}
     self._start_time = None
     self._end_time = None
     self._len = 0
+    super(NCARVar, self).__init__()
 
   def __str__(self):
-    return self._name + ": (" + str(self.length) + ") "+ str(self._data)
-
-  def __len__(self):
-    return self._len
+    return '%s (%s): %s' % (self._name, self._len, OrderedData.__str__(self))
 
   def __getitem__(self, index):
     try:
-      return self._data[self._order[index]]
+      return OrderedDict.__getitem__(self,self._order[index])
     except Exception, e:
       print "Out of bounds: %s[%d]" %(self._name, index)
       raise e
+
+  def __iter__(self):
+    for date in OrderedDict.__iter__(self):
+      yield OrderedDict.__getitem__(self, date)
 
   def getName(self):
     return self._name
@@ -113,7 +108,7 @@ class NCARVar():
       return
 
     self.__mergeData(data)
-    if len(self._data) == 0:
+    if OrderedDict.__len__(self) == 0:
       self._start_time = data[0][0]
       self._end_time = data[-1][0]
 
@@ -121,13 +116,13 @@ class NCARVar():
   ## Does not make any assumptions about the data inside the containter.
   def __mergeData(self, data):
     for row in data:
-      self._data[row[0]] = row[1]
+      OrderedDict.__setitem__(self, row[0], row[1])
       self._order[self._len] = row[0]
       self._len += 1
     self._end_time = data[-1][0]
 
 
   def clearData(self):
-    self._data = OrderedDict()
+    OrderedDict.clear(self)
     self._order = {}
     self._len = 0
