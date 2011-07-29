@@ -17,7 +17,6 @@
 import psycopg2 ## PostGreSQL module, http://www.initd.org/psycopg/
 import datetime
 import time
-import random
 import sys
 from multiprocessing.managers import BaseManager
 
@@ -55,9 +54,8 @@ class NCARDatabaseLiveUpdater(object):
     if len(data) != 0:
       self._last_update_time = data[-1][0]
       self._updateAttachedVars(data)
-    else:
-      time.sleep(3)
-      self.update()
+
+    self.server.sleep(3)
 
 
   def _updateAttachedVars(self,data):
@@ -69,15 +67,17 @@ class NCARDatabaseLiveUpdater(object):
 
 class NCARDatabase(object):
   def __init__(self, host="eol-rt-data.guest.ucar.edu", user="ads",\
-               password="", database=None, simulate_time=None):
+      password="", database=None, simulate_start_time=None, simulate_fast=False):
     self._database = database
     self._user = user
     self._password = password
     self._host = host
     self._variable_list = ()
     self._start_time = datetime.datetime.now()
-    self._simulate_time = simulate_time
+    self._simulate_start_time = simulate_start_time
+    self._current_time = simulate_start_time if simulate_start_time != None else self._start_time
     self._conn = None
+    self._simulate_fast = simulate_fast if simulate_start_time != None else False
 
 
     if database == None:
@@ -108,14 +108,36 @@ class NCARDatabase(object):
       print e
 
 
+  def flying(self):
+    speed = 0
+    data = (self.getData(number_entries=1, variables=('tasx',)))
+    if len(data) != 0:
+      speed = data[0][1]
+    if speed > 50:
+      return True
+    else:
+      return False
+
+
+  def sleep(self, sleep_time):
+    if self._simulate_fast:
+      self._current_time += datetime.timedelta(seconds=sleep_time)
+    else:
+      time.sleep(sleep_time)
+
+
   def _getSimulatedCurrentTime(self):
-    return ((datetime.datetime.now() - self._start_time) + self._simulate_time).replace(microsecond=0)
+    if self._simulate_fast:
+      return ((self._current_time - self._simulate_start_time) + self._simulate_start_time).replace(microsecond=0)
+    else:
+      return ((datetime.datetime.now() - self._start_time) + self._simulate_start_time).replace(microsecond=0)
+
 
   ## TODO: figure out if this is needed under this name.
   ## Will also send a reset signal to the variables to clear their data?
   def getData(self, variables=None, start_time=None, end_time=None, number_entries=None):
 
-    NOW = str(self._getSimulatedCurrentTime()) if self._simulate_time != None else "NOW()"
+    NOW = str(self._getSimulatedCurrentTime()) if self._simulate_start_time != None else "NOW()"
 
     if isinstance(start_time, datetime.datetime):
       start_time = str(start_time)
@@ -140,29 +162,29 @@ class NCARDatabase(object):
     if   end_time == None and start_time != None and number_entries == None:
       ## Assume -# INTERVAL syntax, SQL style.
       if start_time[0] == "-" or start_time[0] == "+":
-        if self._simulate_time:
+        if self._simulate_start_time:
           time_interval = "WHERE (datetime > timestamp '" + NOW + "' + interval '" + start_time + "') AND (datetime <= '" + NOW + "')"
         else:
           time_interval = "WHERE datetime > " + NOW + " " + start_time[0] + " interval '" + start_time[1:] + "'"
       else: ## Assume explicit date given, SQL style.
-        if self._simulate_time != None:
+        if self._simulate_start_time != None:
           time_interval = "WHERE (datetime > '%s' AND datetime <= '%s')" % (start_time, NOW)
         else:
           time_interval = "WHERE datetime > '" + start_time + "'"
     elif end_time == None and start_time != None and number_entries != None:
       if start_time[0] == "-" or start_time[0] == "+":
-        if self._simulate_time:
+        if self._simulate_start_time:
           time_interval = "WHERE datetime > (timestamp '" + NOW + "' + interval '" + start_time + "')"
         else:
           time_interval = "WHERE datetime > " + NOW + " " + start_time[0] + " interval '" + start_time[1:] + "'"
       else: ## Assume explicit date given, SQL style.
-        if self._simulate_time != None:
+        if self._simulate_start_time != None:
           time_interval = "WHERE (datetime > '%s' AND datetime <= '%s')" % (start_time, NOW)
         else:
           time_interval = "WHERE datetime > '" + start_time + "'"
       time_interval += " ORDER BY datetime ASC LIMIT " + str(number_entries)
     elif end_time == None and start_time == None and number_entries != None:
-      if self._simulate_time != None:
+      if self._simulate_start_time != None:
         time_interval = "WHERE datetime <= '%s' ORDER BY datetime DESC LIMIT %s" %(NOW, str(number_entries))
       else:
         time_interval = " ORDER BY datetime DESC LIMIT " + str(number_entries)

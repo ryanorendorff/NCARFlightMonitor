@@ -18,7 +18,6 @@ from NcarChem.database import NCARDatabase
 from NcarChem.database import NCARDatabaseLiveUpdater, NCARDatabaseManager
 from NcarChem.data import NCARVar
 import NcarChem
-import time
 import datetime
 
 import smtplib
@@ -38,6 +37,8 @@ import os
 def time_str():
   return str(datetime.datetime.utcnow().replace(microsecond=0))+"Z"
 
+def output_file_str():
+  return '/tmp/data-%s.txt' % datetime.datetime.utcnow().strftime("%Y_%m_%d-%H_%M_%S")
 
 def sendMail(to, subject, text, files=[],server="localhost"):
     assert type(to)==list
@@ -72,15 +73,6 @@ def sendMail(to, subject, text, files=[],server="localhost"):
     server.quit()
 
 
-def flying(server):
-  speed = 0
-  data = (server.getData(number_entries=1, variables=('tasx',)))
-  if len(data) != 0:
-    speed = data[0][1]
-  if speed > 50:
-    return True
-  else:
-    return False
 
 ## --------------------------------------------------------------------------
 ## Classes
@@ -96,14 +88,15 @@ if __name__ == "__main__":
 
   NCARManager = NCARDatabaseManager()
   NCARManager.start()
-  #server = NCARManager.Server(database="C130", simulate_time = datetime.datetime(2011,7,28,20,12,00))
-  server = NCARManager.Server(database="C130")
+  #server = NCARManager.Server(database="C130", simulate_start_time = datetime.datetime(2011,7,28,14,0,0), simulate_fast=True)
+  server = NCARManager.Server(database="C130", simulate_start_time = datetime.datetime(2011,7,28,20,12,00), simulate_fast=True)
+  #server = NCARManager.Server(database="C130")
 
 
-  while(not flying(server)):
+  while(not server.flying()):
     server.reconnect()
     print "[%s] Waiting for flight." % time_str()
-    time.sleep(1800)
+    server.sleep(1800)
   print "[%s] In flight." % time_str()
 
   variables=('datetime', 'ggalt', 'tasx', 'atx', 'fo3_acd', 'ch4_pic', 'co2_pic', 'dkl_mc', 'idxl_mc', 'pp2fl_mc', 'pwrl_mc')
@@ -119,17 +112,22 @@ if __name__ == "__main__":
 
   updater = NCARDatabaseLiveUpdater(server=server, variables=NCARVar_list)
 
-  while(flying(server)):
+  while(server.flying()):
     updater.update() ## A blocking call
     #print NCARVar_list[0]
 
   print "[%s] Flight ending, acquiring two minutes of data." % time_str()
-  time.sleep(2*60) ## Sleep for ten minutes after the flight, then get data.
+  server.sleep(2*60) ## Sleep for ten minutes after the flight, then get data.
   updater.update()
 
   output_string = ""
+  index = 0
   for var in variables:
-    output_string += var + ","
+    if index == 0:
+      output_string += "year,month,day,hour,minute,second,"
+    else:
+      output_string += var + ","
+    index += 1
   output_string = output_string.rstrip(', ')
 
   output_string += '\n'
@@ -148,16 +146,16 @@ if __name__ == "__main__":
     output_string += line
     index += 1
 
-  output_file = '/tmp/data-' + str(datetime.datetime.utcnow()) + '.txt'
+  output_file = output_file_str()
   output = open(output_file, 'w')
   print >>output, output_string
   print "[%s] Outputting file to %s" %(time_str(), output_file)
   output.close()
 
-  sendMail(
-          ["ryano@ucar.edu"],
-          "Data from flight " + str(datetime.datetime.today()), "Attached is data from flight on " + str(datetime.datetime.today()),
-          [output_file]
-      )
+  #sendMail(
+          #["ryano@ucar.edu"],
+          #"Data from flight " + str(datetime.datetime.today()), "Attached is data from flight on " + str(datetime.datetime.today()),
+          #[output_file]
+      #)
 
   print "[%s] Sent mail." % time_str()
