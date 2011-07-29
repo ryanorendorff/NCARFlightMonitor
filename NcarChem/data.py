@@ -71,33 +71,36 @@ class NCARVarSet():
     output += '\n'
 
     for counter in range(self._len):
-      line = self._vars['datetime'][counter][1].strftime("%Y,%m,%d,%H,%M,%S")
+      line = self._vars['datetime'][counter].strftime("%Y,%m,%d,%H,%M,%S")
       for var in self._vars:
         if var == "datetime":
           continue
-        line += ',' + str(self._vars[var][counter][1])
+        line += ',' + str(self._vars[var][counter])
       line += '\n'
       output += line
 
     return output.rstrip('\n')
 
 
-class NCARVar:
+class NCARVar():
 
   def __init__(self, name=None):
     self._name = name.lower()
-    self._data = [] ## Will contain tuple pair (datetime, value)
+    self._data = OrderedDict()
+    self._order = {}
     self._start_time = None
     self._end_time = None
-    self.length = 0
+    self._len = 0
 
   def __str__(self):
     return self._name + ": (" + str(self.length) + ") "+ str(self._data)
 
+  def __len__(self):
+    return self._len
 
   def __getitem__(self, index):
     try:
-      return self._data[index]
+      return self._data[self._order[index]]
     except Exception, e:
       print "Out of bounds: %s[%d]" %(self._name, index)
       raise e
@@ -109,39 +112,22 @@ class NCARVar:
     if len(data) == 0:
       return
 
+    self.__mergeData(data)
     if len(self._data) == 0:
-      self._data = data
       self._start_time = data[0][0]
       self._end_time = data[-1][0]
-    else:
-      self.__mergeData(data)
 
-    self.length = len(self._data)
 
-  ## TODO: figure out how to check if data is continuous.
-  ## Assumes data is continuous, assume correct input.
+  ## Does not make any assumptions about the data inside the containter.
   def __mergeData(self, data):
-    if len(data) == 0:
-      return
-
-
-    self._data += data
+    for row in data:
+      self._data[row[0]] = row[1]
+      self._order[self._len] = row[0]
+      self._len += 1
     self._end_time = data[-1][0]
 
 
   def clearData(self):
-    self._data = []
-
-
-
-  def getLastPoints(number_entries=None, from_time = None, to_time=None):
-    if number_entries != None and from_time == None:
-      return self._data[-number_entries]
-
-
-
-
-
-## --------------------------------------------------------------------------
-## Start command line interface (main)
-## --------------------------------------------------------------------------
+    self._data = OrderedDict()
+    self._order = {}
+    self._len = 0
