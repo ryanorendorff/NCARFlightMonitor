@@ -37,32 +37,22 @@ class NCARDatabaseLiveUpdater(object):
   def __init__(self, server=None, variables=None):
     self.server = server
     self._last_update_time = None
-    self._variables = variables
-    self._variable_tuple = ()
+    self._vars = variables
 
     current_time = server.getData(number_entries=1)
     self._last_update_time = current_time[0][0]
 
-    for var in variables:
-      self._variable_tuple += (var.getName(),)
-
 
   def update(self):
 
-    data = self.server.getData(start_time=self._last_update_time, variables=self._variable_tuple)
+    data = self.server.getData(start_time=self._last_update_time, variables=self._vars.keys())
 
     if len(data) != 0:
       self._last_update_time = data[-1][0]
-      self._updateAttachedVars(data)
+      self._vars.addData(data)
 
     self.server.sleep()
 
-
-  def _updateAttachedVars(self,data):
-    pos=1
-    for var in self._variables:
-      var.addData([(column[0], column[pos]) for column in data])
-      pos = pos + 1
 
 
 class NCARDatabase(object):

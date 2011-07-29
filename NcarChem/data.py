@@ -14,22 +14,73 @@
 ## --------------------------------------------------------------------------
 ## Imports and Globals
 ## --------------------------------------------------------------------------
-
+from collections import OrderedDict
 
 ## --------------------------------------------------------------------------
 ## Functions
 ## --------------------------------------------------------------------------
 
-def createVarList(names):
-  variables = []
-  for i in names:
-    variables.append(NCARVar(i))
+def createOrderedDict(variables):
+  var_list = []
+  for var in variables:
+    var_list.append((var, NCARVar(var)))
 
-  return variables
+  return OrderedDict(var_list)
+
 
 ## --------------------------------------------------------------------------
 ## Classes
 ## --------------------------------------------------------------------------
+
+class NCARVarSet():
+  def __init__(self, *variables):
+    self._vars = None
+    self._str = str(variables)
+    self._len = 0
+
+    if 'datetime' not in variables:
+      variables = ('datetime',) + variables
+
+    self._vars = createOrderedDict(variables)
+
+
+  def __str__(self):
+    return self._str
+
+  def __iter__(self):
+    for var in self._vars:
+      yield self._vars[var]
+
+  def keys(self):
+    return self._vars.keys()
+
+  def addData(self, data):
+    if len(data) != 0:
+      self._len += len(data)
+      pos = 1
+      for var in self._vars:
+        self._vars[var].addData([(column[0], column[pos]) for column in data])
+        pos += 1
+
+  def csv(self):
+    output = "year,month,day,hour,minute,second" ## Always start with date.
+    for key in self.keys():
+      if key == 'datetime':
+        continue
+      output += ",%s" % key
+    output += '\n'
+
+    for counter in range(self._len):
+      line = self._vars['datetime'][counter][1].strftime("%Y,%m,%d,%H,%M,%S")
+      for var in self._vars:
+        if var == "datetime":
+          continue
+        line += ',' + str(self._vars[var][counter][1])
+      line += '\n'
+      output += line
+
+    return output.rstrip('\n')
+
 
 class NCARVar:
 

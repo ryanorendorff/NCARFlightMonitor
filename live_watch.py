@@ -92,67 +92,31 @@ if __name__ == "__main__":
   NCARManager = NCARDatabaseManager()
   NCARManager.start()
   #server = NCARManager.Server(database="C130", simulate_start_time = datetime.datetime(2011,7,28,14,0,0), simulate_fast=True)
-  server = NCARManager.Server(database="C130")
+  server = NCARManager.Server(database="C130", simulate_start_time = datetime.datetime(2011,7,28,20,12,0), simulate_fast=True)
+  #server = NCARManager.Server(database="C130")
 
 
   while(not server.flying()):
-    server.reconnect()
+    server.reconnect() ## Done to ensure good connection.
     print "[%s] Waiting for flight." % time_str()
     server.sleep(1800)
   print "[%s] In flight." % time_str()
 
-  variables=('datetime', 'ggalt', 'tasx', 'atx', 'fo3_acd', 'ch4_pic', 'co2_pic', 'dkl_mc', 'idxl_mc', 'pp2fl_mc', 'pwrl_mc')
-  NCARVar_list = NcarChem.data.createVarList(variables)
+  variables=NcarChem.data.NCARVarSet('ggalt', 'tasx', 'atx', 'fo3_acd', 'ch4_pic', 'co2_pic', 'dkl_mc', 'idxl_mc', 'pp2fl_mc', 'pwrl_mc')
 
-  pre_takeoff = server.getData(start_time="-60 MINUTE", variables=variables)
+  variables.addData(server.getData(start_time="-60 MINUTE", variables=variables.keys()))
 
-  if len(pre_takeoff) != 0:
-    pos = 1
-    for var in NCARVar_list:
-      var.addData([(column[0], column[pos]) for column in pre_takeoff])
-      pos += 1
 
-  updater = NCARDatabaseLiveUpdater(server=server, variables=NCARVar_list)
-
+  updater = NCARDatabaseLiveUpdater(server=server, variables=variables)
   while(server.flying()):
-    updater.update() ## A blocking call
-    #print NCARVar_list[0]
+    updater.update() ## Can return none, sleeps for at least DatRate seconds.
 
   print "[%s] Flight ending, acquiring two minutes of data." % time_str()
   server.sleep(2*60) ## Sleep for ten minutes after the flight, then get data.
-  updater.update()
+  updater.update() ## Get last bit of data.
 
-  output_string = ""
-  index = 0
-  for var in variables:
-    if index == 0:
-      output_string += "year,month,day,hour,minute,second,"
-    else:
-      output_string += var + ","
-    index += 1
-  output_string = output_string.rstrip(', ')
-
-  output_string += '\n'
-  index = 0
-  for line in range(NCARVar_list[0].length):
-    line = ""
-    var_index = 0
-    for var in NCARVar_list:
-      if var_index == 0:
-        line += var[index][1].strftime("%Y,%m,%d,%H,%M,%S,")
-      else:
-        line += str(var[index][1]) + ","
-
-      var_index += 1
-    line = line.rstrip(',') + "\n"
-    output_string += line
-    index += 1
-
-  output_file = output_file_str(server)
-  output = open(output_file, 'w')
-  print >>output, output_string
-  print "[%s] Outputting file to %s" %(time_str(), output_file)
-  output.close()
+  print "[%s] Outputting file to %s" %(time_str(), output_file_str(server))
+  open(output_file_str(server), 'w').write(variables.csv())
 
   #sendMail(
           #["ryano@ucar.edu"],
