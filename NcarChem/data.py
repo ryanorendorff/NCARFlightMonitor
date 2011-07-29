@@ -45,9 +45,6 @@ class NCARVarSet(OrderedDict):
     super(NCARVarSet,self).__init__(createOrderedList(variables))
 
 
-  def __str__(self):
-    return self._str
-
   def addData(self, data):
     if len(data) != 0:
       self._rows += len(data)
@@ -83,9 +80,6 @@ class NCARVar(OrderedDict):
     self._order = {}
     super(NCARVar, self).__init__()
 
-  def __str__(self):
-    return OrderedDict.__str__(self)
-
   def getIndex(self, index):
     try:
       return OrderedDict.__getitem__(self,self._order[index])
@@ -113,13 +107,3 @@ class NCARVar(OrderedDict):
     OrderedDict.clear(self)
     self._order = {}
 
-  setdefault = OrderedDict.setdefault
-  update = OrderedDict.update
-  pop = OrderedDict.pop
-  keys = OrderedDict.keys
-  values = OrderedDict.values
-  items = OrderedDict.items
-  iterkeys = OrderedDict.iterkeys
-  itervalues = OrderedDict.itervalues
-  iteritems = OrderedDict.iteritems
-  __ne__ = OrderedDict.__ne__

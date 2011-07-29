@@ -92,8 +92,8 @@ if __name__ == "__main__":
   NCARManager = NCARDatabaseManager()
   NCARManager.start()
   #server = NCARManager.Server(database="C130", simulate_start_time = datetime.datetime(2011,7,28,14,0,0), simulate_fast=True)
-  #server = NCARManager.Server(database="C130", simulate_start_time = datetime.datetime(2011,7,28,20,12,0), simulate_fast=True)
-  server = NCARManager.Server(database="C130")
+  server = NCARManager.Server(database="C130", simulate_start_time = datetime.datetime(2011,7,28,20,12,0), simulate_fast=True)
+  #server = NCARManager.Server(database="C130")
 
 
   while(not server.flying()):
@@ -118,10 +118,10 @@ if __name__ == "__main__":
   print "[%s] Outputting file to %s" %(time_str(), output_file_str(server))
   open(output_file_str(server), 'w').write(variables.csv())
 
-  sendMail(
-          ["ryano@ucar.edu"],
-          "Data from flight " + str(datetime.datetime.today()), "Attached is data from flight on " + str(datetime.datetime.today()),
-          [output_file]
-      )
+  #sendMail(
+          #["ryano@ucar.edu"],
+          #"Data from flight " + str(datetime.datetime.today()), "Attached is data from flight on " + str(datetime.datetime.today()),
+          #[output_file]
+      #)
 
   print "[%s] Sent mail." % time_str()
