@@ -55,7 +55,7 @@ class NCARDatabaseLiveUpdater(object):
       self._last_update_time = data[-1][0]
       self._updateAttachedVars(data)
 
-    self.server.sleep(3)
+    self.server.sleep()
 
 
   def _updateAttachedVars(self,data):
@@ -72,7 +72,8 @@ class NCARDatabase(object):
     self._user = user
     self._password = password
     self._host = host
-    self._variable_list = ()
+    self.variable_list = ()
+    self._flight_info = None
     self._start_time = datetime.datetime.now()
     self._simulate_start_time = simulate_start_time
     self._current_time = simulate_start_time if simulate_start_time != None else self._start_time
@@ -94,7 +95,12 @@ class NCARDatabase(object):
     variable_list = cursor.fetchall()
 
     for var in variable_list:
-      self._variable_list = var + self._variable_list
+      self.variable_list = var + self.variable_list
+
+    cursor.execute("SELECT * FROM global_attributes;")
+    self._flight_info = dict(cursor.fetchall())
+
+    cursor.close()
 
 
 
@@ -119,12 +125,17 @@ class NCARDatabase(object):
       return False
 
 
-  def sleep(self, sleep_time):
+  def sleep(self, sleep_time=0):
+    if sleep_time == 0:
+      sleep_time = int(self._flight_info['DataRate'])
+
     if self._simulate_fast:
       self._current_time += datetime.timedelta(seconds=sleep_time)
     else:
       time.sleep(sleep_time)
 
+  def getFlightInformation(self):
+    return self._flight_info
 
   def _getSimulatedCurrentTime(self):
     if self._simulate_fast:
@@ -148,7 +159,7 @@ class NCARDatabase(object):
     var_str = "datetime, "
     if variables != None:
       for var in variables:
-        if var in self._variable_list:
+        if var in self.variable_list:
           var_str += var + ", "
         else:
           print >>sys.stderr, "Could not add variable %s, does not exist" % var

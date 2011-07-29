@@ -37,8 +37,11 @@ import os
 def time_str():
   return str(datetime.datetime.utcnow().replace(microsecond=0))+"Z"
 
-def output_file_str():
-  return '/tmp/data-%s.txt' % datetime.datetime.utcnow().strftime("%Y_%m_%d-%H_%M_%S")
+def output_file_str(server):
+  info = server.getFlightInformation()
+  project = info['ProjectNumber']
+  flight =  info['FlightNumber']
+  return '/tmp/%s-%s-%s.asc' % (project, flight, datetime.datetime.utcnow().strftime("%Y_%m_%d-%H_%M_%S"))
 
 def sendMail(to, subject, text, files=[],server="localhost"):
     assert type(to)==list
@@ -89,8 +92,7 @@ if __name__ == "__main__":
   NCARManager = NCARDatabaseManager()
   NCARManager.start()
   #server = NCARManager.Server(database="C130", simulate_start_time = datetime.datetime(2011,7,28,14,0,0), simulate_fast=True)
-  server = NCARManager.Server(database="C130", simulate_start_time = datetime.datetime(2011,7,28,20,12,00), simulate_fast=True)
-  #server = NCARManager.Server(database="C130")
+  server = NCARManager.Server(database="C130")
 
 
   while(not server.flying()):
@@ -146,7 +148,7 @@ if __name__ == "__main__":
     output_string += line
     index += 1
 
-  output_file = output_file_str()
+  output_file = output_file_str(server)
   output = open(output_file, 'w')
   print >>output, output_string
   print "[%s] Outputting file to %s" %(time_str(), output_file)
