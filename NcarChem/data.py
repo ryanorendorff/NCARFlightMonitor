@@ -84,7 +84,7 @@ class NCARVar(OrderedDict):
     super(NCARVar, self).__init__()
 
   def __str__(self):
-    return '%s (%s): %s' % (self._name, OrderedDict.__len__(self), OrderedDict.__str__(self))
+    return OrderedDict.__str__(self)
 
   def getIndex(self, index):
     try:
@@ -92,10 +92,6 @@ class NCARVar(OrderedDict):
     except Exception, e:
       print "Out of bounds: %s[%d]" %(self._name, index)
       raise e
-
-  def __iter__(self):
-    for date in OrderedDict.__iter__(self):
-      yield OrderedDict.__getitem__(self, date)
 
   def getName(self):
     return self._name
