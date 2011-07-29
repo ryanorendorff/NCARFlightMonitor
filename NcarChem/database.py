@@ -79,6 +79,7 @@ class NCARDatabase(object):
     self._current_time = simulate_start_time if simulate_start_time != None else self._start_time
     self._conn = None
     self._simulate_fast = simulate_fast if simulate_start_time != None else False
+    self._sql_bad_attempts = 0
 
 
     if database == None:
@@ -209,8 +210,11 @@ class NCARDatabase(object):
       cursor.execute(sql_command)
       data = cursor.fetchall()
     except Exception, e:
-      print "SQL Command failed: " + sql_command
-      self.reconnect()
+      print >>sys.stderr, "SQL Command failed: " + sql_command
+      self._sql_bad_attempts += 1
+      if self._sql_bad_attempts % 10 == 0:
+        print >>sys.stderr, "Ten SQL commands failed, attempting to reconnect to the server."
+        self.reconnect()
 
     cursor.close()
 
