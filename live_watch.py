@@ -111,6 +111,10 @@ if __name__ == "__main__":
   while(server.flying()):
     updater.update() ## Can return none, sleeps for at least DatRate seconds.
 
+  tasx = variables['tasx']
+  #for k,v in tasx.iteritems():
+    #print k,v
+
   print "[%s] Flight ending, acquiring two minutes of data." % time_str()
   server.sleep(2*60) ## Sleep for ten minutes after the flight, then get data.
   updater.update() ## Get last bit of data.

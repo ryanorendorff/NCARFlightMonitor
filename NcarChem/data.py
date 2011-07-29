@@ -35,7 +35,7 @@ def createOrderedList(variables):
 class NCARVarSet(OrderedDict):
   def __init__(self, *variables):
     self._str = ""
-    self._len = 0
+    self._rows = 0
 
 
     if 'datetime' not in variables:
@@ -50,7 +50,7 @@ class NCARVarSet(OrderedDict):
 
   def addData(self, data):
     if len(data) != 0:
-      self._len += len(data)
+      self._rows += len(data)
       pos = 1
       for var in OrderedDict.__iter__(self):
         OrderedDict.__getitem__(self,var).addData([(column[0], column[pos]) for column in data])
@@ -64,12 +64,12 @@ class NCARVarSet(OrderedDict):
       output += ",%s" % key
     output += '\n'
 
-    for counter in range(self._len):
-      line = OrderedDict.__getitem__(self,'datetime')[counter].strftime("%Y,%m,%d,%H,%M,%S")
+    for counter in range(self._rows):
+      line = OrderedDict.__getitem__(self,'datetime').getIndex(counter).strftime("%Y,%m,%d,%H,%M,%S")
       for var in OrderedDict.__iter__(self):
         if var == "datetime":
           continue
-        line += ',' + str(OrderedDict.__getitem__(self,var)[counter])
+        line += ',' + str(OrderedDict.__getitem__(self,var).getIndex(counter))
       line += '\n'
       output += line
 
@@ -81,15 +81,12 @@ class NCARVar(OrderedDict):
   def __init__(self, name=None):
     self._name = name.lower()
     self._order = {}
-    self._start_time = None
-    self._end_time = None
-    self._len = 0
     super(NCARVar, self).__init__()
 
   def __str__(self):
-    return '%s (%s): %s' % (self._name, self._len, OrderedData.__str__(self))
+    return '%s (%s): %s' % (self._name, OrderedDict.__len__(self), OrderedDict.__str__(self))
 
-  def __getitem__(self, index):
+  def getIndex(self, index):
     try:
       return OrderedDict.__getitem__(self,self._order[index])
     except Exception, e:
@@ -103,26 +100,30 @@ class NCARVar(OrderedDict):
   def getName(self):
     return self._name
 
-  def addData(self, data = [], process_algo = None):
+  def addData(self, data = []):
     if len(data) == 0:
       return
 
     self.__mergeData(data)
-    if OrderedDict.__len__(self) == 0:
-      self._start_time = data[0][0]
-      self._end_time = data[-1][0]
-
 
   ## Does not make any assumptions about the data inside the containter.
   def __mergeData(self, data):
     for row in data:
+      self._order[OrderedDict.__len__(self)] = row[0]
       OrderedDict.__setitem__(self, row[0], row[1])
-      self._order[self._len] = row[0]
-      self._len += 1
-    self._end_time = data[-1][0]
 
 
   def clearData(self):
     OrderedDict.clear(self)
     self._order = {}
-    self._len = 0
+
+  setdefault = OrderedDict.setdefault
+  update = OrderedDict.update
+  pop = OrderedDict.pop
+  keys = OrderedDict.keys
+  values = OrderedDict.values
+  items = OrderedDict.items
+  iterkeys = OrderedDict.iterkeys
+  itervalues = OrderedDict.itervalues
+  iteritems = OrderedDict.iteritems
+  __ne__ = OrderedDict.__ne__
