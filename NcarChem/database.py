@@ -29,10 +29,10 @@ from multiprocessing.managers import BaseManager
 ## Classes
 ## --------------------------------------------------------------------------
 
-class NCARDatabaseManager(BaseManager):
+class NDatabaseManager(BaseManager):
   pass
 
-class NCARDatabaseLiveUpdater(object):
+class NDatabaseLiveUpdater(object):
 
   def __init__(self, server=None, variables=None):
     self.server = server
@@ -55,7 +55,7 @@ class NCARDatabaseLiveUpdater(object):
 
 
 
-class NCARDatabase(object):
+class NDatabase(object):
   def __init__(self, host="eol-rt-data.guest.ucar.edu", user="ads",\
       password="", database=None, simulate_start_time=None, simulate_fast=False):
     self._database = database
