@@ -57,8 +57,11 @@ class NDatabaseLiveUpdater(object):
 
 class NDatabase(object):
 
-  def __init__(self, host="eol-rt-data.guest.ucar.edu", user="ads",\
-                     password="", database=None, simulate_start_time=None,\
+  def __init__(self, host="eol-rt-data.guest.ucar.edu",
+                     user="ads",
+                     password="",
+                     database=None,
+                     simulate_start_time=None,
                      simulate_fast=False):
     self._database = database
     self._user = user

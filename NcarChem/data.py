@@ -65,8 +65,8 @@ class NVarSet(OrderedDict):
     output += '\n'
 
     for counter in range(self._rows):
-      line = OrderedDict.__getitem__(self, 'datetime')[counter].\
-                         strftime("%Y,%m,%d,%H,%M,%S")
+      print counter
+      line = OrderedDict.__getitem__(self, 'datetime')[counter].strftime("%Y,%m,%d,%H,%M,%S")
       for var in OrderedDict.__iter__(self):
         if var == "datetime":
           continue
@@ -77,6 +77,10 @@ class NVarSet(OrderedDict):
     return output.rstrip('\n')
 
 
+  def clearData(self):
+    for var in OrderedDict.__iter__(self):
+      OrderedDict.__getitem__(self, var).clearData()
+
 class NVar(OrderedDict):
 
   def __init__(self, name=None):
@@ -86,9 +90,18 @@ class NVar(OrderedDict):
 
   def __getitem__(self, index):
     if isinstance(index, int):
-      return OrderedDict.__getitem__(self, self._order[index])
+      if index < 0:
+        return OrderedDict.__getitem__(self, self._order[(OrderedDict.__len__(self)-1) + index])
+      else:
+        return OrderedDict.__getitem__(self, self._order[index])
     else:
       return OrderedDict.__getitem__(self, index)
+  def getDate(self, index):
+    if index < 0:
+      return self._order[(OrderedDict.__len__(self) - 1) + index]
+    else:
+      return self._order[index]
+
 
   def getName(self):
     return self._name

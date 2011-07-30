@@ -29,8 +29,6 @@ from email import Encoders
 import os
 
 
-
-
 ## --------------------------------------------------------------------------
 ## Functions
 ## --------------------------------------------------------------------------
@@ -96,13 +94,13 @@ if __name__ == "__main__":
 
   NManager = NDatabaseManager()
   NManager.start()
-  server = NManager.Server(database="C130",\
+  server = NManager.Server(database="C130",
                            simulate_start_time=\
-                             datetime.datetime(2011, 7, 28, 14, 0, 0), \
+                             datetime.datetime(2011, 7, 28, 14, 0, 0),
                            simulate_fast=True)
-  #server = NManager.Server(database="C130",\
+  #server = NManager.Server(database="C130",
                            #simulate_start_time=\
-                             #datetime.datetime(2011, 7, 28, 20, 12, 0), \
+                             #datetime.datetime(2011, 7, 28, 20, 12, 0),
                            #simulate_fast=True)
   #server = NManager.Server(database="C130")
 
@@ -110,32 +108,59 @@ if __name__ == "__main__":
   while(not server.flying()):
     server.reconnect() ## Done to ensure good connection.
     print "[%s] Waiting for flight." % time_str()
-    server.sleep(1800)
+    server.sleep(5*60)
   print "[%s] In flight." % time_str()
 
-  variables = NcarChem.data.NVarSet('ggalt', 'tasx', 'atx', \
-                                    'fo3_acd', \
-                                    'ch4_pic', 'co2_pic', \
+  variables = NcarChem.data.NVarSet('ggalt', 'tasx', 'atx','psfdc',
+                                    'fo3_acd',
+                                    'ch4_pic', 'co2_pic',
                                     'dkl_mc', 'idxl_mc', 'pp2fl_mc', 'pwrl_mc')
 
-  variables.addData(server.getData(start_time="-60 MINUTE", \
+  variables.addData(server.getData(start_time="-60 MINUTE",
                                    variables=variables.keys()))
+
+  BAD_DATA = -32767
+  psfdc = variables['psfdc']
+  fo3_acd = variables['fo3_acd']
+  fo3_caling = False
+  fo3_error = False
+  co2 = variables['co2_pic']
+  ch4 = variables['ch4_pic']
 
   updater = NDatabaseLiveUpdater(server=server, variables=variables)
   while(server.flying()):
     updater.update() ## Can return none, sleeps for at least DatRate seconds.
+
+    if not (350 <= co2[-1] <= 500):
+      print "[%s] CO2 out of bounds." % co2.getDate(-1)
+
+    if not (1.7 <= ch4[-1] <= 1.9):
+      print "[%s] CH4 out of bounds" % ch4.getDate(-1)
+
+    if 0 <= fo3_acd[-1] <= 0.09 and psfdc[-1]*0.75006 < 745 and fo3_caling == False:
+      print "[%s] fO3 cal occuring." % fo3_acd.getDate(-1)
+      fo3_caling = True
+    elif fo3_acd[-1] > 0.09 and fo3_caling == True:
+      fo3_caling = False
+
+    if fo3_acd[-1] == -0.1 and fo3_error == False:
+      print "[%s] fo3 error data flag." % fo3_acd.getDate(-1)
+      fo3_error = True
+    elif fo3_acd[-1] != -0.1 and fo3_error == True:
+      fo3_error = False
 
   print "[%s] Flight ending, acquiring two minutes of data." % time_str()
   server.sleep(2 * 60) ## Get more data after landing
   updater.update() ## Get last bit of data.
 
   print "[%s] Outputting file to %s" % (time_str(), output_file_str(server))
-  #open(output_file_str(server), 'w').write(variables.csv())
+  out_file_name = output_file_str(server)
+  open(out_file_name, 'w').write(variables.csv())
 
   mail_time = time_str()
   sendMail(["ryano@ucar.edu"],
            "Data from flight " + mail_time, \
            "Attached is data from flight on " + mail_time,
-           [output_file])
+           [out_file_name])
 
   print "[%s] Sent mail." % time_str()
