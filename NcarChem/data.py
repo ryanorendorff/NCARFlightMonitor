@@ -20,6 +20,7 @@ from collections import OrderedDict
 ## Functions
 ## --------------------------------------------------------------------------
 
+
 def createOrderedList(variables):
   var_list = []
   for var in variables:
@@ -32,7 +33,9 @@ def createOrderedList(variables):
 ## Classes
 ## --------------------------------------------------------------------------
 
+
 class NCARVarSet(OrderedDict):
+
   def __init__(self, *variables):
     self._str = ""
     self._rows = 0
@@ -42,15 +45,15 @@ class NCARVarSet(OrderedDict):
       variables = ('datetime',) + variables
     self._str = str(variables)
 
-    super(NCARVarSet,self).__init__(createOrderedList(variables))
-
+    super(NCARVarSet, self).__init__(createOrderedList(variables))
 
   def addData(self, data):
     if len(data) != 0:
       self._rows += len(data)
       pos = 1
       for var in OrderedDict.__iter__(self):
-        OrderedDict.__getitem__(self,var).addData([(column[0], column[pos]) for column in data])
+        OrderedDict.__getitem__(self, var).addData([(column[0], column[pos])\
+                                                   for column in data])
         pos += 1
 
   def csv(self):

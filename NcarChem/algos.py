@@ -21,11 +21,21 @@
 ## --------------------------------------------------------------------------
 
 
+
 ## --------------------------------------------------------------------------
 ## Classes
 ## --------------------------------------------------------------------------
-def NCARAlgorithm():
+def NAlgoGroup(object):
   pass
+
+def NAlgorithm(object):
+  def __init(self, processing_fn = None, *data)
+    self._data = data
+    self._process = processing_fn
+
+
+  def __str__(self):
+    return str(self._data), str(processing_fn)
 
 ## --------------------------------------------------------------------------
 ## Start command line interface (main)

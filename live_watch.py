@@ -106,8 +106,9 @@ if __name__ == "__main__":
 
   variables.addData(server.getData(start_time="-60 MINUTE", variables=variables.keys()))
 
-
-  updater = NCARDatabaseLiveUpdater(server=server, variables=variables)
+  process = NAlgorithm(processing_fn = lambda a,b,x: a<x<b, variables['ggalt'])
+  print process
+  updater = NDatabaseLiveUpdater(server=server, variables=variables)
   while(server.flying()):
     updater.update() ## Can return none, sleeps for at least DatRate seconds.
 
@@ -116,7 +117,7 @@ if __name__ == "__main__":
   updater.update() ## Get last bit of data.
 
   print "[%s] Outputting file to %s" %(time_str(), output_file_str(server))
-  open(output_file_str(server), 'w').write(variables.csv())
+  #open(output_file_str(server), 'w').write(variables.csv())
 
   #sendMail(
           #["ryano@ucar.edu"],
