@@ -26,18 +26,12 @@
 ## Classes
 ## --------------------------------------------------------------------------
 
-class NAlgorithm(object):
-
-  def __init__(self, processing_fn = None, *variables)
-    pass
-
 
 class NAlgorithm(object):
 
-  def __init__(self, processing_fn = None, *data)
+  def __init__(self, processing_fn=None, *data):
     self._data = data
     self._process = processing_fn
-
 
   def __str__(self):
     return str(self._data), str(processing_fn)
