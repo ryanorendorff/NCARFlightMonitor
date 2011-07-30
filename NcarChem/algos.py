@@ -25,11 +25,16 @@
 ## --------------------------------------------------------------------------
 ## Classes
 ## --------------------------------------------------------------------------
-def NAlgoGroup(object):
-  pass
 
-def NAlgorithm(object):
-  def __init(self, processing_fn = None, *data)
+class NAlgorithm(object):
+
+  def __init__(self, processing_fn = None, *variables)
+    pass
+
+
+class NAlgorithm(object):
+
+  def __init__(self, processing_fn = None, *data)
     self._data = data
     self._process = processing_fn
 

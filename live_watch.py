@@ -14,9 +14,9 @@
 ## --------------------------------------------------------------------------
 ## Imports and Globals
 ## --------------------------------------------------------------------------
-from NcarChem.database import NCARDatabase
-from NcarChem.database import NCARDatabaseLiveUpdater, NCARDatabaseManager
-from NcarChem.data import NCARVar
+from NcarChem.database import NDatabase
+from NcarChem.database import NDatabaseLiveUpdater, NDatabaseManager
+from NcarChem.data import NVar
 import NcarChem
 import datetime
 
@@ -85,15 +85,15 @@ def sendMail(to, subject, text, files=[],server="localhost"):
 ## Start command line interface (main)
 ## --------------------------------------------------------------------------
 
-NCARDatabaseManager.register('Server',NCARDatabase)
+NDatabaseManager.register('Server',NDatabase)
 
 if __name__ == "__main__":
 
-  NCARManager = NCARDatabaseManager()
-  NCARManager.start()
-  #server = NCARManager.Server(database="C130", simulate_start_time = datetime.datetime(2011,7,28,14,0,0), simulate_fast=True)
-  server = NCARManager.Server(database="C130", simulate_start_time = datetime.datetime(2011,7,28,20,12,0), simulate_fast=True)
-  #server = NCARManager.Server(database="C130")
+  NManager = NDatabaseManager()
+  NManager.start()
+  #server = NManager.Server(database="C130", simulate_start_time = datetime.datetime(2011,7,28,14,0,0), simulate_fast=True)
+  server = NManager.Server(database="C130", simulate_start_time = datetime.datetime(2011,7,28,20,12,0), simulate_fast=True)
+  #server = NManager.Server(database="C130")
 
 
   while(not server.flying()):
@@ -102,12 +102,10 @@ if __name__ == "__main__":
     server.sleep(1800)
   print "[%s] In flight." % time_str()
 
-  variables=NcarChem.data.NCARVarSet('ggalt', 'tasx', 'atx', 'fo3_acd', 'ch4_pic', 'co2_pic', 'dkl_mc', 'idxl_mc', 'pp2fl_mc', 'pwrl_mc')
+  variables=NcarChem.data.NVarSet('ggalt', 'tasx', 'atx', 'fo3_acd', 'ch4_pic', 'co2_pic', 'dkl_mc', 'idxl_mc', 'pp2fl_mc', 'pwrl_mc')
 
   variables.addData(server.getData(start_time="-60 MINUTE", variables=variables.keys()))
 
-  process = NAlgorithm(processing_fn = lambda a,b,x: a<x<b, variables['ggalt'])
-  print process
   updater = NDatabaseLiveUpdater(server=server, variables=variables)
   while(server.flying()):
     updater.update() ## Can return none, sleeps for at least DatRate seconds.

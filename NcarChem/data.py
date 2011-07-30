@@ -24,7 +24,7 @@ from collections import OrderedDict
 def createOrderedList(variables):
   var_list = []
   for var in variables:
-    var_list.append((var, NCARVar(var)))
+    var_list.append((var, NVar(var)))
 
   return var_list
 
@@ -34,7 +34,7 @@ def createOrderedList(variables):
 ## --------------------------------------------------------------------------
 
 
-class NCARVarSet(OrderedDict):
+class NVarSet(OrderedDict):
 
   def __init__(self, *variables):
     self._str = ""
@@ -45,7 +45,7 @@ class NCARVarSet(OrderedDict):
       variables = ('datetime',) + variables
     self._str = str(variables)
 
-    super(NCARVarSet, self).__init__(createOrderedList(variables))
+    super(NVarSet,self).__init__(createOrderedList(variables))
 
   def addData(self, data):
     if len(data) != 0:
@@ -65,30 +65,29 @@ class NCARVarSet(OrderedDict):
     output += '\n'
 
     for counter in range(self._rows):
-      line = OrderedDict.__getitem__(self,'datetime').getIndex(counter).strftime("%Y,%m,%d,%H,%M,%S")
+      line = OrderedDict.__getitem__(self,'datetime')[counter].strftime("%Y,%m,%d,%H,%M,%S")
       for var in OrderedDict.__iter__(self):
         if var == "datetime":
           continue
-        line += ',' + str(OrderedDict.__getitem__(self,var).getIndex(counter))
+        line += ',' + str(OrderedDict.__getitem__(self,var)[counter])
       line += '\n'
       output += line
 
     return output.rstrip('\n')
 
 
-class NCARVar(OrderedDict):
+class NVar(OrderedDict):
 
   def __init__(self, name=None):
     self._name = name.lower()
     self._order = {}
-    super(NCARVar, self).__init__()
+    super(NVar, self).__init__()
 
-  def getIndex(self, index):
-    try:
-      return OrderedDict.__getitem__(self,self._order[index])
-    except Exception, e:
-      print "Out of bounds: %s[%d]" %(self._name, index)
-      raise e
+  def __getitem__(self, index):
+    if isinstance(index, int):
+      return OrderedDict.__getitem__(self, self._order[index])
+    else:
+      return OrderedDict.__getitem__(self, index)
 
   def getName(self):
     return self._name
