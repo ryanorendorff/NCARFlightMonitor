@@ -65,7 +65,6 @@ class NVarSet(OrderedDict):
     output += '\n'
 
     for counter in range(self._rows):
-      print counter
       line = OrderedDict.__getitem__(self, 'datetime')[counter].strftime("%Y,%m,%d,%H,%M,%S")
       for var in OrderedDict.__iter__(self):
         if var == "datetime":

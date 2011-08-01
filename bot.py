@@ -26,7 +26,8 @@ from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
 from email.Utils import COMMASPACE, formatdate
 from email import Encoders
-import os
+import os, time
+import threading
 from twisted.words.protocols import irc
 from twisted.internet import protocol, reactor, ssl, task
 
@@ -88,9 +89,12 @@ def sendMail(to, subject, text, files=[], server="localhost"):
 ## --------------------------------------------------------------------------
 
 
+#class live_watch(threading.Thread):
 class live_watch():
 
   def __init__(self):
+    #super(live_watch,self).__init__()
+    #threading.Thread.__init__(self)
     self.server = None
     self.updater = None
     self.variables = None
@@ -100,15 +104,11 @@ class live_watch():
 
     NManager = NDatabaseManager()
     NManager.start()
-    self.server = NManager.Server(database="C130",
-                                  simulate_start_time=\
-                                    datetime.datetime(2011, 7, 28, 14, 0, 0),
-                                  simulate_fast=True)
-    #server = NManager.Server(database="C130",
-                             #simulate_start_time=\
-                               #datetime.datetime(2011, 7, 28, 20, 12, 0),
-                             #simulate_fast=True)
-    #server = NManager.Server(database="C130")
+    #self.server = NManager.Server(database="C130",
+                                  #simulate_start_time=\
+                                    #datetime.datetime(2011, 7, 28, 14, 0, 0),
+                                  #simulate_fast=True)
+    self.server = NManager.Server(database="C130")
 
     self.variables = NcarChem.data.NVarSet('ggalt', 'tasx', 'atx','psfdc',
                                       'fo3_acd',
@@ -122,12 +122,12 @@ class live_watch():
     except Exception, e:
       print "Could not message chat server"
 
-  def process(self):
-    #print "Processing"
+  def run(self):
     if not self.server.flying():
       if self.flying_now == False:
         self.server.reconnect() ## Done to ensure good connection.
         print "[%s] Waiting for flight." % time_str()
+        self.zeusbot.msg('orendorff_boulder','Waiting for flight')
         self.server.sleep(5*60)
       else:
         self.zeusMsg('#co','Landed.')
@@ -169,10 +169,10 @@ class live_watch():
       self.updater.update() ## Can return none, sleeps for at least DatRate seconds.
 
       if not (350 <= co2[-1] <= 500):
-        self.zeusMsg('#co', "[%sZ] CO2 out of bounds." % co2.getDate(-1))
+        self.zeusMsg('#co', "[%sZ] CO2 out of bounds. %s" % (co2.getDate(-1), co2[-1]))
 
       if not (1.7 <= ch4[-1] <= 1.9):
-        self.zeusMsg('#co', "[%sZ] CH4 out of bounds." % ch4.getDate(-1))
+        self.zeusMsg('#co', "[%sZ] CH4 out of bounds. %s" % (ch4.getDate(-1)), ch4[-1])
 
       if 0 <= fo3_acd[-1] <= 0.09 and psfdc[-1]*0.75006 < 745 and self.fo3_caling == False:
         self.zeusMsg('#co', "[%sZ] fO3 cal occuring." % fo3_acd.getDate(-1))
@@ -199,8 +199,6 @@ class ZeusBot(irc.IRCClient):
         self.join('#ICET')
         self.join('#C130Q')
         print "Signed on as %s." % (self.nickname,)
-        #self.msg('#co', "Zeus is home baby")
-        live_watch.zeusbot = self
 
 
 
@@ -208,7 +206,13 @@ class ZeusBot(irc.IRCClient):
         print "Joined %s." % (channel,)
 
     def privmsg(self, user, channel, msg):
-        print msg
+      if msg == "start":
+        live_watch.zeusbot = self
+        watcher = live_watch()
+        l = task.LoopingCall(watcher.run)
+        l.start(0.001)
+      elif msg == "stop":
+        self.msg(user, "HammerTime")
 
 class ZeusBotFactory(protocol.ClientFactory):
     protocol = ZeusBot
@@ -232,9 +236,6 @@ NDatabaseManager.register('Server', NDatabase)
 
 if __name__ == "__main__":
 
-  watcher = live_watch()
-  l = task.LoopingCall(watcher.process)
-  l.start(0.001)
   reactor.connectSSL('rdcc.guest.ucar.edu',6668, ZeusBotFactory('#' + 'co'), ssl.ClientContextFactory())
   reactor.run()
 
