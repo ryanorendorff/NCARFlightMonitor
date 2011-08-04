@@ -57,11 +57,11 @@ class NVarSet(OrderedDict):
         pos += 1
 
   def csv(self):
-    output = "year,month,day,hour,minute,second" ## Always start with date.
+    output = "YEAR,MONTH,DAY,HOUR,MINUTE,SECOND" ## Always start with date.
     for key in self.keys():
       if key == 'datetime':
         continue
-      output += ",%s" % key
+      output += ",%s" % key.upper()
     output += '\n'
 
     for counter in range(self._rows):
