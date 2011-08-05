@@ -27,6 +27,7 @@ from email.MIMEText import MIMEText
 from email.Utils import COMMASPACE, formatdate
 from email import Encoders
 import os
+import time
 
 
 ## --------------------------------------------------------------------------
@@ -91,13 +92,17 @@ def sendMail(to, subject, text, files=[], server="localhost"):
 NDatabaseManager.register('Server', NDatabase)
 
 if __name__ == "__main__":
+  import sys
 
   NManager = NDatabaseManager()
   NManager.start()
   server = NManager.Server(database="C130",
+                           host="127.0.0.1",
+                           user="postgres",
                            simulate_start_time=\
                              datetime.datetime(2011, 7, 28, 14, 0, 0),
-                           simulate_fast=True)
+                           simulate_fast=True,
+                           simulate_file=sys.argv[1])
   #server = NManager.Server(database="C130",
                            #simulate_start_time=\
                              #datetime.datetime(2011, 7, 28, 20, 12, 0),
@@ -123,6 +128,8 @@ if __name__ == "__main__":
   psfdc = variables['psfdc']
   fo3_acd = variables['fo3_acd']
   fo3_caling = False
+  co2_out = False
+  ch4_out = False
   fo3_error = False
   co2 = variables['co2_pic']
   ch4 = variables['ch4_pic']
@@ -131,11 +138,19 @@ if __name__ == "__main__":
   while(server.flying()):
     updater.update() ## Can return none, sleeps for at least DatRate seconds.
 
-    if not (350 <= co2[-1] <= 500):
+    if not (350 <= co2[-1] <= 500) and co2_out == False:
       print "[%s] CO2 out of bounds." % co2.getDate(-1)
+      co2_out = True
+    elif 350 <= co2[-1] <= 500 and co2_out == True:
+      print "[%s] CO2 back in bounds." % co2.getDate(-1)
+      co2_out = False
 
-    if not (1.7 <= ch4[-1] <= 1.9):
-      print "[%s] CH4 out of bounds" % ch4.getDate(-1)
+    if not (1.7 <= ch4[-1] <= 1.9) and ch4_out == False:
+      print "[%s] CH4 out of bounds." % ch4.getDate(-1)
+      ch4_out = True
+    elif 1.7 <= ch4[-1] <= 1.9 and ch4_out == True:
+      print "[%s] CH4 back in bounds." % ch4.getDate(-1)
+      ch4_out = False
 
     if 0 <= fo3_acd[-1] <= 0.09 and psfdc[-1]*0.75006 < 745 and fo3_caling == False:
       print "[%s] fO3 cal occuring." % fo3_acd.getDate(-1)
@@ -158,9 +173,11 @@ if __name__ == "__main__":
   open(out_file_name, 'w').write(variables.csv())
 
   mail_time = time_str()
-  sendMail(["ryano@ucar.edu"],
-           "Data from flight " + mail_time, \
-           "Attached is data from flight on " + mail_time,
-           [out_file_name])
+  #sendMail(["ryano@ucar.edu"],
+           #"Data from flight " + mail_time, \
+           #"Attached is data from flight on " + mail_time,
+           #[out_file_name])
 
   print "[%s] Sent mail." % time_str()
+  time.sleep(1800)
+  server.stop()

@@ -19,11 +19,57 @@ import datetime
 import time
 import sys
 from multiprocessing.managers import BaseManager
+import datafile
+import random
 
 ## --------------------------------------------------------------------------
 ## Functions
 ## --------------------------------------------------------------------------
 
+def _loadFile(file_path, dbname, host, user, password, dbstart):
+  try:
+    file_str = open(file_path, 'r').read()
+  except Exception, e:
+    print e
+  header, labels, data = datafile._parseIntoHeaderLabelsData(file_str)
+
+  if header != None:
+    SQL_CMDS = datafile._createSimSqlFromHeader(header)
+
+  data = datafile._createDataFromString(labels, data)
+
+  conn = psycopg2.connect(database=dbstart, \
+                          user=user, \
+                          host=host, \
+                          password=password)
+  conn.set_isolation_level(0)
+  cursor = conn.cursor()
+  cursor.execute("CREATE DATABASE %s;" % dbname)
+  cursor.close()
+  conn.close()
+
+  conn = psycopg2.connect(database=dbname, \
+                          user=user, \
+                          host=host, \
+                          password=password)
+
+  cursor = conn.cursor()
+  conn.set_isolation_level(0)
+  for cmd in SQL_CMDS:
+    cursor.execute(cmd)
+
+  VARS = ""
+  for var in data[0]:
+    VARS += "%s," % var.lower()
+
+  INSERT_CMD = "INSERT INTO raf_lrt (" + VARS.rstrip(', ') + ") VALUES (%s);"
+  for row in data[1:]:
+    data_piece = ""
+    for item in row:
+      data_piece += "'%s'," % str(item)
+    cursor.execute(INSERT_CMD % data_piece.rstrip(', '))
+  cursor.close()
+  conn.close()
 
 ## --------------------------------------------------------------------------
 ## Classes
@@ -62,7 +108,8 @@ class NDatabase(object):
                      password="",
                      database=None,
                      simulate_start_time=None,
-                     simulate_fast=False):
+                     simulate_fast=False,
+                     simulate_file=None):
     self._database = database
     self._user = user
     self._password = password
@@ -77,13 +124,20 @@ class NDatabase(object):
     self._simulate_fast = simulate_fast if simulate_start_time != None else\
                           False
     self._sql_bad_attempts = 0
-
+    self._simulate_start_db = None
 
     if database == None:
       raise ValueError('Database must be specified')
 
     if database == "C130" or database == "GV":
       self._database = "real-time-" + database
+
+    if simulate_file != None:
+      dbname = "test" + str(int(random.random() * 1000000))
+      self._simulate_start_db = self._database
+      tmp_db = self._database
+      self._database = dbname
+      _loadFile(simulate_file, dbname, self._host, self._user, self._password, tmp_db)
 
     self.reconnect()
 
@@ -99,6 +153,28 @@ class NDatabase(object):
     self._flight_info = dict(cursor.fetchall())
 
     cursor.close()
+    self._running = True
+
+  def __del__(self):
+    try:
+      self._conn.close()
+    except Exception, e:
+      pass
+    if self._simulate_start_db != None and self._running == True:
+      import psycopg2 ## Load library back in before finally taking stuff down
+      conn = psycopg2.connect(database=self._simulate_start_db, \
+                              user=self._user, \
+                              host=self._host, \
+                              password=self._password)
+      conn.set_isolation_level(0)
+      cursor = conn.cursor()
+      cursor.execute("DROP DATABASE %s;" % self._database)
+      cursor.close()
+      conn.close()
+
+  def stop(self):
+    self.__del__()
+    self._running = False
 
   def reconnect(self):
     try:
@@ -224,3 +300,23 @@ class NDatabase(object):
     cursor.close()
 
     return data
+
+
+
+## --------------------------------------------------------------------------
+## Start command line interface (main)
+## --------------------------------------------------------------------------
+
+
+if __name__ == "__main__":
+
+  server = NDatabase(database="test",
+                     user="postgres",
+                     host="127.0.0.1",
+                     simulate_start_time=\
+                       datetime.datetime(2011, 7, 28, 14, 0, 0),
+                     simulate_fast=True,
+                     simulate_file=sys.argv[1])
+
+  print "Done loading"
+  time.sleep(124121)
