@@ -15,6 +15,7 @@
 ## Imports and Globals
 ## --------------------------------------------------------------------------
 from collections import OrderedDict
+import datafile
 
 ## --------------------------------------------------------------------------
 ## Functions
@@ -28,6 +29,15 @@ def createOrderedList(variables):
 
   return var_list
 
+def createOrderedListFromFile(file_name):
+  file_str = open(file_name, "r").read()
+  header, labels, data = datafile._parseIntoHeaderLabelsData(file_str)
+  data = datafile._createDataFromString(labels, data)
+  print data
+  olist = NVarSet(data[0][1:])
+  olist.addData(data[1:])
+  return olist
+
 
 ## --------------------------------------------------------------------------
 ## Classes
@@ -36,21 +46,29 @@ def createOrderedList(variables):
 
 class NVarSet(OrderedDict):
 
-  def __init__(self, *variables):
+  def __init__(self, var_start, *variables):
     self._str = ""
     self._rows = 0
+    self._date = []
 
+    if isinstance(var_start, list) and variables == ():
+      variables = tuple(var_start)
+    elif isinstance(var_start, tuple) and variables == ():
+      variables = var_start
+    else:
+      variables = (var_start,) + variables
 
-    if 'datetime' not in variables:
-      variables = ('datetime',) + variables
     self._str = str(variables)
-
     super(NVarSet, self).__init__(createOrderedList(variables))
+
+  def __str__(self):
+    return "NVarSet%s" % self._str
 
   def addData(self, data):
     if len(data) != 0:
       self._rows += len(data)
       pos = 1
+      self._date += [column[0] for column in data]
       for var in OrderedDict.__iter__(self):
         OrderedDict.__getitem__(self, var).addData([(column[0], column[pos])\
                                                    for column in data])
@@ -59,16 +77,12 @@ class NVarSet(OrderedDict):
   def csv(self):
     output = "YEAR,MONTH,DAY,HOUR,MINUTE,SECOND" ## Always start with date.
     for key in self.keys():
-      if key == 'datetime':
-        continue
       output += ",%s" % key.upper()
     output += '\n'
 
     for counter in range(self._rows):
-      line = OrderedDict.__getitem__(self, 'datetime')[counter].strftime("%Y,%m,%d,%H,%M,%S")
+      line =self._date[counter].strftime("%Y,%m,%d,%H,%M,%S")
       for var in OrderedDict.__iter__(self):
-        if var == "datetime":
-          continue
         line += ',' + str(OrderedDict.__getitem__(self, var)[counter])
       line += '\n'
       output += line
@@ -79,6 +93,8 @@ class NVarSet(OrderedDict):
   def clearData(self):
     for var in OrderedDict.__iter__(self):
       OrderedDict.__getitem__(self, var).clearData()
+      self._date = []
+
 
 class NVar(OrderedDict):
 
@@ -120,3 +136,15 @@ class NVar(OrderedDict):
   def clearData(self):
     OrderedDict.clear(self)
     self._order = {}
+
+
+## --------------------------------------------------------------------------
+## Start command line interface (main)
+## --------------------------------------------------------------------------
+
+if __name__ == "__main__":
+  import sys
+
+  olist = createOrderedListFromFile(sys.argv[1])
+  print olist
+  print olist.csv()
