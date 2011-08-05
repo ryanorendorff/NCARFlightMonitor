@@ -96,7 +96,6 @@ def _createDataFromString(labels, data):
 
 def _parseIntoHeaderLabelsData(file_str):
   try:
-    #file_pieces = re.match(r"^(.*?)\n(?=[^#])(.*?)\n(.*)$", file_str, re.S)
     file_pieces = re.match(r"^(#.*?\n)?(?=[^#]*?\n)(.*?)\n(.*)$", file_str, re.S)
     header = file_pieces.groups()[0]
     labels = file_pieces.groups()[1].upper().split(',')
