@@ -8,5 +8,5 @@ Scripts accessing the PSQL database (the database that Aeros connects to) need t
 Files
 =====
 - `live_watch.py`: Watches for when a plane takes off, records data from the flight. Will also include data quality algorithms.
-- `parse_O3.py`: Determines the data types in an fo3 file and can replace all blank cells with any value (useful for MATLAB)
+- `bot.py`: A chatbot that is identical to `live_watch.py` but outputs to a IRC server instead of stdout.
 - `NcarChem`: Module for all chem code.
