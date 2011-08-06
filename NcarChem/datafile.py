@@ -72,8 +72,14 @@ def _createSimSqlFromHeader(header):
                 DATA += "'%s'," % value
               elif COLUMNS_DATA_TYPE[counter][1] == "double precision":
                 DATA += "%s," % value
+              elif COLUMNS_DATA_TYPE[counter][1] == "integer":
+                DATA += "%s," % value
               elif COLUMNS_DATA_TYPE[counter][1] == "timestamp without time zone":
                 DATA += "TIMESTAMP '%s'" % value
+              elif "character" in COLUMNS_DATA_TYPE[counter][1]:
+                DATA += "'%s'," % value
+              elif "[]" in COLUMNS_DATA_TYPE[counter][1]:
+                DATA += "'%s'," % str(value).replace('[', '{').replace(']', '}')
               else:
                 print >>sys.stderr, "Problem creating insert statement for value %s, unknown type" % value
             DATA = DATA.rstrip(', ')
@@ -109,6 +115,76 @@ def _parseIntoHeaderLabelsData(file_str):
 ## --------------------------------------------------------------------------
 ## Classes
 ## --------------------------------------------------------------------------
+
+
+class NRTFile(object):
+  def __init__(self, file_name=""):
+    self.header = ""
+    self.labels = ""
+    self.data = ""
+    self.file_name = ""
+
+    if file_name != "":
+      try:
+        file_str = open(file_name, "r").read()
+      except:
+        print >>sys.stderr, "Could not open file %s" % file_name
+      header, labels, data = _parseIntoHeaderLabelsData(file_str)
+      data = _createDataFromString(labels, data)
+      self.header = header
+      self.labels = data[0][1:]
+      self.data = data[1:]
+      self.file_name = file_name
+
+  def addServerHeader(self, sql_structure):
+    for line in sql_structure.split('\n'):
+      self.header += "#! %s\n" % line
+    self.header = self.header.rstrip('\n')
+
+  def addData(self, data):
+    self.labels = 'YEAR,MONTH,DAY,HOUR,MINUTE,SECOND'
+    for label in data[0][1:]:
+      self.labels += ',%s' % label.upper()
+
+    data_string = ""
+    for row in data[1:]:
+      line = ""
+      for value in row:
+        if isinstance(value, datetime.datetime):
+          line += value.strftime("%Y,%m,%d,%H,%M,%S,")
+        else:
+          line += '%s,' % str(value)
+      data_string += line.rstrip(', ') + '\n'
+
+    self.data = data_string
+
+  def write(self, file_name="", header=None, data=None):
+    if file_name == "":
+      file_name = self.file_name
+    self.file_name = file_name
+
+    if header != None:
+      self.addServerHeader(header)
+    if data != None:
+      self.addData(data)
+    try:
+      f = open(file_name, 'w')
+    except Exception, e:
+      print >>sys.stderr, "Could not open file %s for writing." % file_name
+      print e
+      return
+
+    try:
+      f.write(self.header + "\n" + self.labels + '\n' + self.data)
+    except Exception, e:
+      print >>sys.stderr, "Could not write to file %s" % file_name
+      print e
+
+    try:
+      f.close()
+    except:
+      pass
+
 
 ## --------------------------------------------------------------------------
 ## Start command line interface (main)

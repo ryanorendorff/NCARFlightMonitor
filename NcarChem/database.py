@@ -125,6 +125,7 @@ class NDatabase(object):
                           False
     self._sql_bad_attempts = 0
     self._simulate_start_db = None
+    self._running = True
 
     if database == None:
       raise ValueError('Database must be specified')
@@ -153,7 +154,6 @@ class NDatabase(object):
     self._flight_info = dict(cursor.fetchall())
 
     cursor.close()
-    self._running = True
 
   def __del__(self):
     try:
@@ -300,6 +300,44 @@ class NDatabase(object):
     cursor.close()
 
     return data
+
+  def getDatabaseStructure(self):
+    cursor = self._conn.cursor()
+    cursor.execute("SELECT table_name from information_schema.tables WHERE table_type = 'BASE TABLE' and table_schema NOT IN ('pg_catalog', 'information_schema');")
+    tables = tuple([col[0] for col in cursor.fetchall()])
+
+    cursor.execute("SELECT T.TABLE_NAME, K.COLUMN_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS T INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE K ON T.CONSTRAINT_NAME = K.CONSTRAINT_NAME WHERE T.CONSTRAINT_TYPE = 'PRIMARY KEY' -- AND T.TABLE_NAME = 'table_name' ORDER BY T.TABLE_NAME, K.ORDINAL_POSITION;")
+    constraints = dict(cursor.fetchall())
+    output = ""
+    for table in tables:
+      tbl_string = "%s=" % table
+      cursor.execute("SELECT column_name,data_type,is_nullable,character_maximum_length, udt_name FROM INFORMATION_SCHEMA.COLUMNS WHERE  TABLE_NAME = '%s' ORDER BY ORDINAL_POSITION;" % table);
+      columns = cursor.fetchall()
+      tbl_string += "('COLUMNS',"
+      for col in columns:
+        col_name = col[0]
+        if col[4] == "_int4":
+          col_base_type = "integer[]"
+        elif col[4] == "_float8":
+          col_base_type = "double precision[]"
+        else:
+          col_base_type = col[1]
+        col_type = col_base_type + ('(' + str(col[3]) + ')' if col[3] != None else "")
+        col_null = 'NOT NULL' if col[2] == 'NO' else ''
+        tbl_string += "('%s','%s','%s')," % (col_name, col_type, col_null)
+      tbl_string = tbl_string.rstrip(', ') + ')'
+      if table in constraints:
+        tbl_string += ";('CONSTRAINT', '%s')" % constraints[table]
+      tbl_string += '%'
+      if table != "raf_lrt":
+        cursor.execute("SELECT * from %s;" % table);
+        data = cursor.fetchall()
+        data = "" if data == [] else tuple(data)
+        tbl_string += str(data).replace("Uncorr'd Raw", "Uncorr''d Raw")
+      output += tbl_string + '\n'
+    cursor.close()
+    return output.strip('\n')
+
 
 
 

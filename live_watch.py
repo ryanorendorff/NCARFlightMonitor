@@ -17,6 +17,7 @@
 from NcarChem.database import NDatabase
 from NcarChem.database import NDatabaseLiveUpdater, NDatabaseManager
 from NcarChem.data import NVar
+from NcarChem.datafile import NRTFile
 import NcarChem
 import datetime
 
@@ -170,7 +171,8 @@ if __name__ == "__main__":
 
   print "[%s] Outputting file to %s" % (time_str(), output_file_str(server))
   out_file_name = output_file_str(server)
-  open(out_file_name, 'w').write(variables.csv())
+  out_file = NRTFile()
+  out_file.write(out_file_name, server.getDatabaseStructure(), variables.getDataAsList())
 
   mail_time = time_str()
   #sendMail(["ryano@ucar.edu"],
@@ -179,5 +181,4 @@ if __name__ == "__main__":
            #[out_file_name])
 
   print "[%s] Sent mail." % time_str()
-  time.sleep(1800)
   server.stop()

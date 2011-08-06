@@ -15,7 +15,7 @@
 ## Imports and Globals
 ## --------------------------------------------------------------------------
 from collections import OrderedDict
-import datafile
+from datafile import NRTFile
 
 ## --------------------------------------------------------------------------
 ## Functions
@@ -30,12 +30,9 @@ def createOrderedList(variables):
   return var_list
 
 def createOrderedListFromFile(file_name):
-  file_str = open(file_name, "r").read()
-  header, labels, data = datafile._parseIntoHeaderLabelsData(file_str)
-  data = datafile._createDataFromString(labels, data)
-  print data
-  olist = NVarSet(data[0][1:])
-  olist.addData(data[1:])
+  nfile = NRTFile(file_name)
+  olist = NVarSet(nfile.labels)
+  olist.addData(nfile.data)
   return olist
 
 
@@ -74,21 +71,15 @@ class NVarSet(OrderedDict):
                                                    for column in data])
         pos += 1
 
-  def csv(self):
-    output = "YEAR,MONTH,DAY,HOUR,MINUTE,SECOND" ## Always start with date.
-    for key in self.keys():
-      output += ",%s" % key.upper()
-    output += '\n'
-
+  def getDataAsList(self):
+    output = []
+    output += (tuple(['DATETIME'] + self.keys()),)
     for counter in range(self._rows):
-      line =self._date[counter].strftime("%Y,%m,%d,%H,%M,%S")
+      line = (self._date[counter],)
       for var in OrderedDict.__iter__(self):
-        line += ',' + str(OrderedDict.__getitem__(self, var)[counter])
-      line += '\n'
-      output += line
-
-    return output.rstrip('\n')
-
+        line += (OrderedDict.__getitem__(self, var)[counter],)
+      output += (line,)
+    return output
 
   def clearData(self):
     for var in OrderedDict.__iter__(self):
@@ -147,4 +138,4 @@ if __name__ == "__main__":
 
   olist = createOrderedListFromFile(sys.argv[1])
   print olist
-  print olist.csv()
+  print olist.getDataAsList()
