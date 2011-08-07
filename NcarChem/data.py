@@ -31,7 +31,7 @@ def createOrderedList(variables):
 
 def createOrderedListFromFile(file_name):
   nfile = NRTFile(file_name)
-  olist = NVarSet(nfile.labels)
+  olist = NVarSet(nfile.variables)
   olist.addData(nfile.data)
   return olist
 
@@ -72,14 +72,14 @@ class NVarSet(OrderedDict):
         pos += 1
 
   def getDataAsList(self):
-    output = []
-    output += (tuple(['DATETIME'] + self.keys()),)
+    labels = tuple(['DATETIME'] + self.keys())
+    data = []
     for counter in range(self._rows):
       line = (self._date[counter],)
       for var in OrderedDict.__iter__(self):
         line += (OrderedDict.__getitem__(self, var)[counter],)
-      output += (line,)
-    return output
+      data += (line,)
+    return labels, data
 
   def clearData(self):
     for var in OrderedDict.__iter__(self):

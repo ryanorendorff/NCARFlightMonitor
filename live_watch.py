@@ -172,7 +172,8 @@ if __name__ == "__main__":
   print "[%s] Outputting file to %s" % (time_str(), output_file_str(server))
   out_file_name = output_file_str(server)
   out_file = NRTFile()
-  out_file.write(out_file_name, server.getDatabaseStructure(), variables.getDataAsList())
+  labels, data = variables.getDataAsList()
+  out_file.write(out_file_name, server.getDatabaseStructure(), labels, data)
 
   mail_time = time_str()
   #sendMail(["ryano@ucar.edu"],

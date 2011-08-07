@@ -27,16 +27,11 @@ import random
 ## --------------------------------------------------------------------------
 
 def _loadFile(file_path, dbname, host, user, password, dbstart):
-  try:
-    file_str = open(file_path, 'r').read()
-  except Exception, e:
-    print e
-  header, labels, data = datafile._parseIntoHeaderLabelsData(file_str)
+  nfile = datafile.NRTFile(file_path)
 
-  if header != None:
-    SQL_CMDS = datafile._createSimSqlFromHeader(header)
-
-  data = datafile._createDataFromString(labels, data)
+  SQL_CMDS = nfile.getSql()
+  labels = nfile.labels
+  data = nfile.data
 
   conn = psycopg2.connect(database=dbstart, \
                           user=user, \
@@ -59,11 +54,11 @@ def _loadFile(file_path, dbname, host, user, password, dbstart):
     cursor.execute(cmd)
 
   VARS = ""
-  for var in data[0]:
+  for var in labels:
     VARS += "%s," % var.lower()
 
   INSERT_CMD = "INSERT INTO raf_lrt (" + VARS.rstrip(', ') + ") VALUES (%s);"
-  for row in data[1:]:
+  for row in data:
     data_piece = ""
     for item in row:
       data_piece += "'%s'," % str(item)

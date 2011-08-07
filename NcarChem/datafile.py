@@ -23,7 +23,7 @@ import sys
 ## Functions
 ## --------------------------------------------------------------------------
 
-def _createSimSqlFromHeader(header):
+def _SqlFromHeader(header):
   cmd_list = ()
   for cnt, line in enumerate(header.split('\n')):
     if len(line) > 0 and line[0] == "#":
@@ -87,7 +87,7 @@ def _createSimSqlFromHeader(header):
 
   return cmd_list
 
-def _createDataFromString(labels, data):
+def _concatTime(labels, data):
   if labels[0] == "YEAR":
     labels = ['DATE'] + labels[3:]
     data = [ ["%s-%s-%s" % (col[0], col[1], col[2])] + col[3:] for col in data]
@@ -96,9 +96,8 @@ def _createDataFromString(labels, data):
     data = [ [datetime.datetime.strptime("%s %s:%s:%s" % (col[0], col[1], col[2], col[3]), '%Y-%m-%d %H:%M:%S')] + col[4:] for col in data]
   elif labels[1] == "UTC":
     labels = ['DATETIME'] + labels[4:]
-    data = [ [datetime.datetime.strptime("%s %s" % (col[0], col[1]), '%Y-%d-%m %H:%M:%S') ] + col[2:] for col in data]
-    pass
-  return [labels] + data
+    data = [ datetime.datetime.strptime("%s %s" % (col[0], col[1]), '%Y-%d-%m %H:%M:%S') + col[2:] for col in data]
+  return tuple(labels), data
 
 def _parseIntoHeaderLabelsData(file_str):
   try:
@@ -121,6 +120,7 @@ class NRTFile(object):
   def __init__(self, file_name=""):
     self.header = ""
     self.labels = ""
+    self.variables = ""
     self.data = ""
     self.file_name = ""
 
@@ -130,43 +130,56 @@ class NRTFile(object):
       except:
         print >>sys.stderr, "Could not open file %s" % file_name
       header, labels, data = _parseIntoHeaderLabelsData(file_str)
-      data = _createDataFromString(labels, data)
+      labels, data = _concatTime(labels, data)
       self.header = header
-      self.labels = data[0][1:]
-      self.data = data[1:]
+      self.labels = labels
+      self.variables = labels[1:]
+      self.data = data
       self.file_name = file_name
 
-  def addServerHeader(self, sql_structure):
+  def setHeader(self, sql_structure):
     for line in sql_structure.split('\n'):
       self.header += "#! %s\n" % line
     self.header = self.header.rstrip('\n')
 
-  def addData(self, data):
-    self.labels = 'YEAR,MONTH,DAY,HOUR,MINUTE,SECOND'
-    for label in data[0][1:]:
-      self.labels += ',%s' % label.upper()
+  def setLabels(self, labels):
+    self.labels = labels
+    self.variables = labels[1:]
 
-    data_string = ""
-    for row in data[1:]:
+  def setData(self, data):
+    self.data = data
+
+  def getSql(self):
+    return _SqlFromHeader(self.header)
+
+  def write(self, file_name="", header=None, labels=None, data=None):
+    if header != None:
+      self.setHeader(header)
+      header=self.header
+    if labels != None:
+      self.setLabels(labels)
+      labels=self.labels
+    if data != None:
+      self.setData(data)
+      data=self.data
+    if file_name == "":
+      file_name = self.file_name
+    self.file_name = file_name
+
+    label_str = 'YEAR,MONTH,DAY,HOUR,MINUTE,SECOND'
+    for variable in labels[1:]:
+      label_str += ',%s' % variable.upper()
+
+    data_str = ""
+    for row in data:
       line = ""
       for value in row:
         if isinstance(value, datetime.datetime):
           line += value.strftime("%Y,%m,%d,%H,%M,%S,")
         else:
           line += '%s,' % str(value)
-      data_string += line.rstrip(', ') + '\n'
+      data_str += line.rstrip(', ') + '\n'
 
-    self.data = data_string
-
-  def write(self, file_name="", header=None, data=None):
-    if file_name == "":
-      file_name = self.file_name
-    self.file_name = file_name
-
-    if header != None:
-      self.addServerHeader(header)
-    if data != None:
-      self.addData(data)
     try:
       f = open(file_name, 'w')
     except Exception, e:
@@ -175,7 +188,7 @@ class NRTFile(object):
       return
 
     try:
-      f.write(self.header + "\n" + self.labels + '\n' + self.data)
+      f.write(header + '\n' + label_str + '\n' + data_str)
     except Exception, e:
       print >>sys.stderr, "Could not write to file %s" % file_name
       print e
@@ -186,24 +199,26 @@ class NRTFile(object):
       pass
 
 
+
+
 ## --------------------------------------------------------------------------
 ## Start command line interface (main)
 ## --------------------------------------------------------------------------
 
 if __name__ == "__main__":
-  file_str = open(sys.argv[1], "r").read()
+  nfile = NRTFile(sys.argv[1])
 
-  header, labels, data = _parseIntoHeaderLabelsData(file_str)
-
+  #print "-----------------------------------------------------------------" + \
+        #"\nSQL Commands\n" + \
+        #"-----------------------------------------------------------------"
+  #if nfile.header != None:
+    #print nfile.getSql()
   print "-----------------------------------------------------------------" + \
-        "\nSQL Commands\n" + \
+        "\nLabels\n" + \
         "-----------------------------------------------------------------"
-  if header != None:
-    for cmd in _createSimSqlFromHeader(header):
-      print cmd
+  print nfile.labels
   print "-----------------------------------------------------------------" + \
         "\nData\n" + \
         "-----------------------------------------------------------------"
-  for info in  _createDataFromString(labels, data):
-    print info
+  print nfile.data
 
