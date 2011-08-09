@@ -199,6 +199,10 @@ class NDatabase(object):
     else:
       time.sleep(sleep_time)
 
+  def getTimeStr(self):
+    return str(self._getSimulatedCurrentTime()) + "Z"
+
+
   def getFlightInformation(self):
     return self._flight_info
 

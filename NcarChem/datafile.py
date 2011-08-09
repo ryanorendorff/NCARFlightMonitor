@@ -156,6 +156,8 @@ class NRTFile(object):
     if header != None:
       self.setHeader(header)
       header=self.header
+    else:
+      header = ""
     if labels != None:
       self.setLabels(labels)
       labels=self.labels

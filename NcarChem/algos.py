@@ -14,6 +14,7 @@
 ## --------------------------------------------------------------------------
 ## Imports and Globals
 ## --------------------------------------------------------------------------
+import datetime
 
 
 ## --------------------------------------------------------------------------
@@ -29,12 +30,27 @@
 
 class NAlgorithm(object):
 
-  def __init__(self, processing_fn=None, *data):
-    self._data = data
-    self._process = processing_fn
+  def __init__(self):
+    self.error = False
+    self.last_date = datetime.datetime(1970, 1, 1, 0, 0, 0)
+    self.variables = []
+    self.updated = False
 
-  def __str__(self):
-    return str(self._data), str(processing_fn)
+    self.setup = lambda : None
+    self.process = lambda : None
+
+  def run(self):
+    new_date = self.variables[0].getDate(-1)
+    if new_date > self.last_date:
+      self.last_date = new_date
+      self.updated = True
+    else:
+      self.updated = False
+
+    if self.updated == True:
+      self.process()
+
+
 
 ## --------------------------------------------------------------------------
 ## Start command line interface (main)
