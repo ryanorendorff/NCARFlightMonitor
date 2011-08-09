@@ -17,174 +17,43 @@
 from NcarChem.database import NDatabase
 from NcarChem.database import NDatabaseLiveUpdater, NDatabaseManager
 from NcarChem.data import NVar
+from NcarChem.watch import watcher
 import NcarChem
 import datetime
 
-import smtplib
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEBase import MIMEBase
-from email.MIMEText import MIMEText
-from email.Utils import COMMASPACE, formatdate
-from email import Encoders
 import os, time
 import threading
 from twisted.words.protocols import irc
 from twisted.internet import protocol, reactor, ssl, task
 
 
+import sys
 
 
 ## --------------------------------------------------------------------------
 ## Functions
 ## --------------------------------------------------------------------------
 
+def setup(self, *extra, **kwds):
+  self.cal = False
+  self.fo3_acd = self.variables[0]
+  self.psfdc = self.variables[1]
 
-def time_str():
-  return str(datetime.datetime.utcnow().replace(microsecond=0)) + "Z"
+def process(self):
+  if 0 <= self.fo3_acd[-1] <= 0.09 and self.psfdc[-1]*0.75006 < 745 and self.cal == False:
+    self.pnt( "[%s] fO3 cal occuring." % (str(self.fo3_acd.getDate(-1)) + "Z"))
+    self.cal = True
+  elif self.fo3_acd[-1] > 0.09 and self.cal == True:
+    self.cal = False
 
-
-def output_file_str(server):
-  info = server.getFlightInformation()
-  project = info['ProjectNumber']
-  flight = info['FlightNumber']
-  return '/tmp/%s-%s-%s.asc' % (project, flight, datetime.datetime.utcnow().\
-                                strftime("%Y_%m_%d-%H_%M_%S"))
-
-
-def sendMail(to, subject, text, files=[], server="localhost"):
-    assert type(to) == list
-    assert type(files) == list
-    fro = "ryano@ucar.edu"
-
-    msg = MIMEMultipart()
-    msg['From'] = fro
-    msg['To'] = COMMASPACE.join(to)
-    msg['Date'] = formatdate(localtime=True)
-    msg['Subject'] = subject
-
-    msg.attach(MIMEText(text))
-
-    for file in files:
-        part = MIMEBase('application', "octet-stream")
-        part.set_payload(open(file, "rb").read())
-        Encoders.encode_base64(part)
-        part.add_header('Content-Disposition', 'attachment; filename="%s"'
-                       % os.path.basename(file))
-        msg.attach(part)
-
-    #smtp = smtplib.SMTP(server)
-    #smtp.sendmail(fro, to, msg.as_string() )
-    #smtp.close()
-
-    pw = open(".pass", 'r').read()
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.starttls()
-    server.login("linux755@gmail.com", pw)
-    server.sendmail("ryano@ucar.edu", "ryano@ucar.edu", msg.as_string())
-    server.quit()
-
-
+def zeusMsg(self, message):
+  try:
+    self.zeusbot.msg("#co", message)
+  except Exception, e:
+    print "Could not message chat server"
 ## --------------------------------------------------------------------------
 ## Classes
 ## --------------------------------------------------------------------------
-
-
-#class live_watch(threading.Thread):
-class live_watch():
-
-  def __init__(self):
-    #super(live_watch,self).__init__()
-    #threading.Thread.__init__(self)
-    self.server = None
-    self.updater = None
-    self.variables = None
-    self.fo3_caling = False
-    self.fo3_error = False
-    self.flying_now = False
-
-    NManager = NDatabaseManager()
-    NManager.start()
-    #self.server = NManager.Server(database="C130",
-                                  #simulate_start_time=\
-                                    #datetime.datetime(2011, 7, 28, 14, 0, 0),
-                                  #simulate_fast=True)
-    self.server = NManager.Server(database="C130")
-
-    self.variables = NcarChem.data.NVarSet('ggalt', 'tasx', 'atx','psfdc',
-                                      'fo3_acd',
-                                      'ch4_pic', 'co2_pic',
-                                      'dkl_mc', 'idxl_mc', 'pp2fl_mc', 'pwrl_mc')
-    self.updater = NDatabaseLiveUpdater(server=self.server, variables=self.variables)
-
-  def zeusMsg(self, channel, message):
-    try:
-      self.zeusbot.msg(channel, message)
-    except Exception, e:
-      print "Could not message chat server"
-
-  def run(self):
-    if not self.server.flying():
-      if self.flying_now == False:
-        self.server.reconnect() ## Done to ensure good connection.
-        print "[%s] Waiting for flight." % time_str()
-        self.zeusbot.msg('orendorff_boulder','Waiting for flight')
-        self.server.sleep(5*60)
-      else:
-        self.zeusMsg('#co','Landed.')
-        print "[%s] Flight ending, acquiring two minutes of data." % time_str()
-        self.server.sleep(2 * 60) ## Get more data after landing
-        self.updater.update() ## Get last bit of data.
-
-        print "[%s] Outputting file to %s" % (time_str(), output_file_str(self.server))
-        out_file_name = output_file_str(self.server)
-        try:
-          open(out_file_name, 'w').write(self.variables.csv())
-          mail_time = time_str()
-          sendMail(["ryano@ucar.edu"],
-                   "Data from flight " + mail_time, \
-                   "Attached is data from flight on " + mail_time,
-                   [out_file_name])
-
-          print "[%s] Sent mail." % time_str()
-        except Exception, e:
-          print "Could not send mail"
-          print e
-
-        self.flying_now = False
-
-    else:
-      if self.flying_now == False:
-        self.zeusMsg('#co', "[%s] In flight." % time_str())
-        self.flying_now = True
-        self.variables.clearData()
-        self.variables.addData(self.server.getData(start_time="-60 MINUTE",
-                                         variables=self.variables.keys()))
-
-      BAD_DATA = -32767
-      psfdc = self.variables['psfdc']
-      fo3_acd = self.variables['fo3_acd']
-      co2 = self.variables['co2_pic']
-      ch4 = self.variables['ch4_pic']
-
-      self.updater.update() ## Can return none, sleeps for at least DatRate seconds.
-
-      if not (350 <= co2[-1] <= 500):
-        self.zeusMsg('#co', "[%sZ] CO2 out of bounds. %s" % (co2.getDate(-1), co2[-1]))
-
-      if not (1.7 <= ch4[-1] <= 1.9):
-        self.zeusMsg('#co', "[%sZ] CH4 out of bounds. %s" % (ch4.getDate(-1)), ch4[-1])
-
-      if 0 <= fo3_acd[-1] <= 0.09 and psfdc[-1]*0.75006 < 745 and self.fo3_caling == False:
-        self.zeusMsg('#co', "[%sZ] fO3 cal occuring." % fo3_acd.getDate(-1))
-        self.fo3_caling = True
-      elif fo3_acd[-1] > 0.09 and self.fo3_caling == True:
-        self.fo3_caling = False
-
-      if fo3_acd[-1] == -0.1 and self.fo3_error == False:
-        self.zeusMsg('#co', "[%sZ] fo3 error data flag." % fo3_acd.getDate(-1))
-        self.fo3_error = True
-      elif fo3_acd[-1] != -0.1 and self.fo3_error == True:
-        self.fo3_error = False
 
 
 class ZeusBot(irc.IRCClient):
@@ -200,19 +69,29 @@ class ZeusBot(irc.IRCClient):
         self.join('#C130Q')
         print "Signed on as %s." % (self.nickname,)
 
-
-
     def joined(self, channel):
         print "Joined %s." % (channel,)
 
     def privmsg(self, user, channel, msg):
       if msg == "start":
-        live_watch.zeusbot = self
-        watcher = live_watch()
-        l = task.LoopingCall(watcher.run)
-        l.start(0.001)
+        watcher.zeusbot = self
+        watcher.pnt=zeusMsg
+        NcarChem.algos.zeusbot = self
+        watch_server = watcher(database="C130",
+                               host="127.0.0.1",
+                               user="postgres",
+                               simulate_start_time=
+                                 datetime.datetime(2011, 7, 28, 14, 0, 0),
+                               simulate_file=sys.argv[1],
+                               variables=('psfdc', 'fo3_acd', 'co2_pic', 'ch4_pic'))
+
+        watch_server.attachBoundsCheck('co2_pic', 350, 500)
+        watch_server.attachBoundsCheck('ch4_pic', 1.7, 1.9)
+        watch_server.attachAlgo(variables=('fo3_acd', 'psfdc'), start_fn=setup, process_fn=process)
+        l = task.LoopingCall(watch_server.run)
+        l.start(0.01)
       elif msg == "stop":
-        self.msg(user, "HammerTime")
+        pass
 
 class ZeusBotFactory(protocol.ClientFactory):
     protocol = ZeusBot

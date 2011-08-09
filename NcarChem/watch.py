@@ -15,20 +15,6 @@
 ## Imports and Globals
 ## --------------------------------------------------------------------------
 
-
-## --------------------------------------------------------------------------
-## Functions
-## --------------------------------------------------------------------------
-
-
-## --------------------------------------------------------------------------
-## Classes
-## --------------------------------------------------------------------------
-
-## --------------------------------------------------------------------------
-## Start command line interface (main)
-## --------------------------------------------------------------------------
-
 from database import NDatabaseLiveUpdater, NDatabaseManager, NDatabase
 from datafile import NRTFile
 from data import NVarSet, NVar
@@ -84,10 +70,6 @@ def sendMail(to, subject, text, files=[], server="localhost"):
                        % os.path.basename(file))
         msg.attach(part)
 
-    #smtp = smtplib.SMTP(server)
-    #smtp.sendmail(fro, to, msg.as_string() )
-    #smtp.close()
-
     pw = open(".pass", 'r').read()
     server = smtplib.SMTP('smtp.gmail.com', 587)
     server.starttls()
@@ -109,6 +91,7 @@ class watcher(object):
                      simulate_start_time=False,
                      simulate_file=None,
                      variables=None,
+                     *extra,
                      **kwds):
     self._database=database
     self._host=host
@@ -118,6 +101,7 @@ class watcher(object):
     self._variables = NVarSet(variables)
 
     self._algos = []
+    self._flying_now = False
 
     self._server = NDatabase(database=self._database,
                              host=self._host,
@@ -126,44 +110,60 @@ class watcher(object):
                              simulate_fast=True,
                              simulate_file=self._simulate_file)
 
+    self._updater = None
+
+  def pnt(self,msg):
+    print msg
+
   def startWatching(self):
     while(True):
-      while(not self._server.flying()):
+      self.run()
+
+  def run(self):
+    if not self._server.flying():
+      if self._flying_now == False:
         self._server.reconnect() ## Done to ensure good connection.
-        print "\r[%s] Waiting for flight." % self._server.getTimeStr(),
+        print "[%s] Waiting for flight." % time_str()
         self._server.sleep(5*60)
-      print "\n[%s] In flight." % self._server.getTimeStr()
+      else:
+        self.pnt( "[%s] Flight ending, acquiring two minutes of data." % time_str())
+        self._server.sleep(2 * 60) ## Get more data after landing
+        self._updater.update() ## Get last bit of data.
 
-      self._variables.addData(self._server.getData(start_time="-60 MINUTE",
-                                       variables=self._variables.keys()))
+        print "[%s] Outputting file to %s" % (time_str(), output_file_str(self._server))
+        out_file_name = output_file_str(self._server)
+        try:
+          out_file_name = output_file_str(self._server)
+          out_file = NRTFile()
+          labels, data = self._variables.getDataAsList()
+          out_file.write(out_file_name, self._server.getDatabaseStructure(), labels, data)
 
+          mail_time = time_str()
+          sendMail(["ryano@ucar.edu"],
+                   "Data from flight " + mail_time, \
+                   "Attached is data from flight on " + mail_time,
+                   [out_file_name])
 
-      updater = NDatabaseLiveUpdater(server=self._server, variables=self._variables)
-      while(self._server.flying()):
-        updater.update() ## Can return none, sleeps for at least DatRate seconds.
+          print "[%s] Sent mail." % time_str()
+        except Exception, e:
+          print "Could not send mail"
+          print e
 
-        for algo in self._algos:
-          algo.run()
+        self._flying_now = False
 
+    else:
+      if self._flying_now == False:
+        self.pnt( "\n[%s] In Flight." % time_str())
+        self._flying_now = True
+        self._variables.clearData()
+        self._variables.addData(self._server.getData(start_time="-60 MINUTE",
+                                         variables=self._variables.keys()))
+        self._updater = NDatabaseLiveUpdater(server=self._server, variables=self._variables)
 
-      print "[%s] Flight ending, acquiring two minutes of data." % self._server.getTimeStr()
-      self._server.sleep(2 * 60) ## Get more data after landing
-      updater.update() ## Get last bit of data.
+      self._updater.update() ## Can return none, sleeps for at least DatRate seconds.
 
-      print "[%s] Outputting file to %s" % (self._server.getTimeStr(), output_file_str(self._server))
-      out_file_name = output_file_str(self._server)
-      out_file = NRTFile()
-      labels, data = self._variables.getDataAsList()
-      out_file.write(out_file_name, self._server.getDatabaseStructure(), labels, data)
-
-      mail_time = self._server.getTimeStr()
-      #sendMail(["ryano@ucar.edu"],
-               #"Data from flight " + mail_time, \
-               #"Attached is data from flight on " + mail_time,
-               #[out_file_name])
-
-      print "[%s] Sent mail." % self._server.getTimeStr()
-
+      for algo in self._algos:
+        algo.run()
 
   def attachBoundsCheck(self, variable_name=None,
                               lower_bound=-32767,
@@ -178,10 +178,10 @@ class watcher(object):
       val = self.variable[-1]
 
       if not(self.lower_bound <= val <= self.upper_bound) and self.error == False:
-        print "[%s] %s out of bounds." % (str(self.variable.getDate(-1)) + "Z", self.variable.getName())
+        self.pnt( "[%s] %s out of bounds." % (str(self.variable.getDate(-1)) + "Z", self.variable.getName()))
         self.error = True
       elif self.lower_bound <= val <= self.upper_bound and self.error == True:
-        print "[%s] %s back in bounds." % (str(self.variable.getDate(-1)) + "Z", self.variable.getName())
+        self.pnt( "[%s] %s back in bounds." % (str(self.variable.getDate(-1)) + "Z", self.variable.getName()))
         self.error=False
 
 
@@ -194,6 +194,7 @@ class watcher(object):
     algo.process = types.MethodType(process_fn, algo, NAlgorithm)
 
     algo.variables = []
+    algo.pnt = self.pnt
     for var in variables:
       algo.variables += [self._variables[var]]
     algo.setup(extra, kwds)
