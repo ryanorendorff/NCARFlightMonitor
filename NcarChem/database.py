@@ -14,13 +14,23 @@
 ## --------------------------------------------------------------------------
 ## Imports and Globals
 ## --------------------------------------------------------------------------
+
+#### Inter-package
+import datafile
+
+## PSQL interface
 import psycopg2 ## PostGreSQL module, http://www.initd.org/psycopg/
+
+## Allows for multiple child processes off one parent program.
+from multiprocessing.managers import BaseManager
+
+## Time imports
 import datetime
 import time
-import sys
-from multiprocessing.managers import BaseManager
-import datafile
 import random
+
+## Used for sys.stderr
+import sys
 
 ## --------------------------------------------------------------------------
 ## Functions
