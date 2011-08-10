@@ -1,12 +1,18 @@
 Installation
 ============
 
-Scripts accessing the PSQL database (the database that Aeros connects to) need to install the psycopg2 python module. This can be easily done at the command line by issuing the following command.
+Scripts accessing the PostGresQL database (the database that Aeros connects to)
+need to install the psycopg2 python module. This can be easily done at the
+command line by issuing the following command.
 
         easy_install psycopg2
 
 Files
 =====
-- `live_watch.py`: Watches for when a plane takes off, records data from the flight. Will also include data quality algorithms.
-- `bot.py`: A chatbot that is identical to `live_watch.py` but outputs to a IRC server instead of stdout.
-- `NcarChem`: Module for all chem code.
+- `examples/live_watch.py`: Watches for when a plane takes off, records data
+  from the flight, and watches for data integrity.
+- `examples/bot.py`: A chatbot that is identical to `live_watch.py` but outputs
+  to a IRC server instead of stdout.
+- `NcarChem/`: Module for all chem code. Does not currently include an install
+  function, hence all code that calls this module must have this directory in
+  the same location as the python script.
