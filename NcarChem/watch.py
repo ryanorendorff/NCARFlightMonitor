@@ -221,7 +221,13 @@ class watcher(object):
                               ## seconds (three seconds by default).
 
       for algo in self._algos:  ## Run algorithms attached by user.
-        algo.run()
+        try:
+          algo.run()
+        except Exception, e:
+          print "Could not run algorithm."
+          self._algos.remove(algo)
+          print e
+
 
   def attachBoundsCheck(self, variable_name=None,
                               lower_bound=-32767,

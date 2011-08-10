@@ -34,18 +34,21 @@ import sys
 ## Functions
 ## --------------------------------------------------------------------------
 
+## Used to determine if co is caling
 def setup(self, *extra, **kwds):
   self.cal = False
-  self.fo3_acd = self.variables[0]
-  self.psfdc = self.variables[1]
+  self.coraw_al = self.variables[0]
 
-def process(self):
-  if 0 <= self.fo3_acd[-1] <= 0.09 and self.psfdc[-1]*0.75006 < 745 and self.cal == False:
-    self.pnt( "[%s] fO3 cal occuring." % (str(self.fo3_acd.getDate(-1)) + "Z"))
+def process_co(self):
+  if self.coraw_al[-1] <= 8000 and self.cal == False:
+    self.pnt( "[%s] CO cal occuring." %\
+              (str(self.coraw_al.getDate(-1)) + "Z"))
     self.cal = True
-  elif self.fo3_acd[-1] > 0.09 and self.cal == True:
+  elif self.coraw_al[-1] > 8000 and self.cal == True:
     self.cal = False
 
+
+## Used to print messages to a chatroom
 def zeusMsg(self, message):
   try:
     self.zeusbot.msg("#co", message)
@@ -65,29 +68,21 @@ class ZeusBot(irc.IRCClient):
 
     def signedOn(self):
         self.join(self.factory.channel)
-        self.join('#ICET')
-        self.join('#C130Q')
         print "Signed on as %s." % (self.nickname,)
 
     def joined(self, channel):
         print "Joined %s." % (channel,)
 
     def privmsg(self, user, channel, msg):
+      ## /msg ZeusBot start to start watching server
       if msg == "start":
-        watcher.zeusbot = self
-        watcher.pnt=zeusMsg
+        watcher.zeusbot = self  ## Attach this bot instance
+        watcher.pnt=zeusMsg  ## Change print function
         NcarChem.algos.zeusbot = self
-        watch_server = watcher(database="C130",
-                               host="127.0.0.1",
-                               user="postgres",
-                               simulate_start_time=
-                                 datetime.datetime(2011, 7, 28, 14, 0, 0),
-                               simulate_file=sys.argv[1],
-                               variables=('psfdc', 'fo3_acd', 'co2_pic', 'ch4_pic'))
-
-        watch_server.attachBoundsCheck('co2_pic', 350, 500)
-        watch_server.attachBoundsCheck('ch4_pic', 1.7, 1.9)
-        watch_server.attachAlgo(variables=('fo3_acd', 'psfdc'), start_fn=setup, process_fn=process)
+        watch_server = watcher(database="GV",
+                               variables=('ggalt','tasx','coraw_al'))
+        watch_server.attachAlgo(variables=('coraw_al',),
+                                start_fn=setup, process_fn=process)
         l = task.LoopingCall(watch_server.run)
         l.start(0.01)
       elif msg == "stop":
@@ -115,6 +110,7 @@ NDatabaseManager.register('Server', NDatabase)
 
 if __name__ == "__main__":
 
+  ## Connect to IRC server and run infinite loop.
   reactor.connectSSL('rdcc.guest.ucar.edu',6668, ZeusBotFactory('#' + 'co'), ssl.ClientContextFactory())
   reactor.run()
 

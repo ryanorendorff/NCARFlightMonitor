@@ -14,15 +14,22 @@
 ## --------------------------------------------------------------------------
 ## Imports and Globals
 ## --------------------------------------------------------------------------
-from collections import OrderedDict
+
+#### Intrapackage imports
 from datafile import NRTFile
+
+## New data type, not supported below python 2.7
+from collections import OrderedDict
 
 ## --------------------------------------------------------------------------
 ## Functions
 ## --------------------------------------------------------------------------
 
-
 def createOrderedList(variables):
+  """
+  Creates a list where col[0] is the variable name and
+  col[1] is an NVar object.
+  """
   var_list = []
   for var in variables:
     var_list.append((var, NVar(var)))
@@ -42,12 +49,23 @@ def createOrderedListFromFile(file_name):
 
 
 class NVarSet(OrderedDict):
+  """
+  Holds multiple NVars, and assumes that they are all the same size (this is
+  true from live aircraft data). Can export data as a list using
+  getDataAsList().
+  """
 
   def __init__(self, var_start, *variables):
+    """
+    Init function can take either a python list of variables or every variable
+
+    listed as a parameter.
+    """
     self._str = ""
     self._rows = 0
     self._date = []
 
+    ## If input is just NVarSet('var1','var2'), convert into list
     if isinstance(var_start, list) and variables == ():
       variables = tuple(var_start)
     elif isinstance(var_start, tuple) and variables == ():
@@ -62,6 +80,10 @@ class NVarSet(OrderedDict):
     return "NVarSet%s" % self._str
 
   def addData(self, data):
+    """
+    Adds data to the set. Must match the variable order of the set and the
+    number of variables in the set.
+    """
     if len(data) != 0:
       self._rows += len(data)
       pos = 1
@@ -72,6 +94,10 @@ class NVarSet(OrderedDict):
         pos += 1
 
   def getDataAsList(self):
+    """
+    Return set as a list of headers and a 2D list matrix of data points, where
+    the datetime variable is first.
+    """
     labels = tuple(['DATETIME'] + self.keys())
     data = []
     for counter in range(self._rows):
@@ -82,12 +108,21 @@ class NVarSet(OrderedDict):
     return labels, data
 
   def clearData(self):
+    """
+    Removes all data from the set, keeps variable list.
+    """
     for var in OrderedDict.__iter__(self):
       OrderedDict.__getitem__(self, var).clearData()
       self._date = []
 
 
 class NVar(OrderedDict):
+  """
+  The basic class for holding chronological list data. It is accessed like a
+  dictionary where the datetime is the key. It will also ordered, so using an
+  integer as the key will give the Nth value in the list. Only accepts one
+  data value per datetime.
+  """
 
   def __init__(self, name=None):
     self._name = name.lower()
@@ -97,12 +132,16 @@ class NVar(OrderedDict):
   def __getitem__(self, index):
     if isinstance(index, int):
       if index < 0:
-        return OrderedDict.__getitem__(self, self._order[(OrderedDict.__len__(self)-1) + index])
+        return OrderedDict.__getitem__(self,
+                 self._order[(OrderedDict.__len__(self)-1) + index])
       else:
         return OrderedDict.__getitem__(self, self._order[index])
     else:
       return OrderedDict.__getitem__(self, index)
   def getDate(self, index):
+    """
+    Returns the date associated with an integer index.
+    """
     if index < 0:
       return self._order[(OrderedDict.__len__(self) - 1) + index]
     else:
@@ -110,9 +149,16 @@ class NVar(OrderedDict):
 
 
   def getName(self):
+    """
+    Returns variable name.
+    """
     return self._name
 
   def addData(self, data=[]):
+    """
+    Adds data to the variable. It does not check the data input, this must
+    be done prior to adding the data.
+    """
     if len(data) == 0:
       return
 
@@ -125,6 +171,9 @@ class NVar(OrderedDict):
       OrderedDict.__setitem__(self, row[0], row[1])
 
   def clearData(self):
+    """
+    Removes all data from variable, keeps variable name.
+    """
     OrderedDict.clear(self)
     self._order = {}
 
@@ -134,6 +183,9 @@ class NVar(OrderedDict):
 ## --------------------------------------------------------------------------
 
 if __name__ == "__main__":
+  """
+  Testing function.
+  """
   import sys
 
   olist = createOrderedListFromFile(sys.argv[1])
