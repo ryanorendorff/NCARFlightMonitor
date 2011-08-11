@@ -78,4 +78,4 @@ if __name__ == "__main__":
   watch_server.attachAlgo(variables=('coraw_al',), start_fn=setup_co, process_fn=process_co)
 
   ## This is an infinite loop.
-  watch_server.startWatching()
+  watch_server.runOnce()

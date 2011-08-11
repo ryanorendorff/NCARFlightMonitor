@@ -133,6 +133,7 @@ class watcher(object):
 
     self._algos = []
     self._flying_now = False
+    self._num_flight = 0
 
     if self._simulate_file != None:
       self._server = NDatabase(database=self._database,
@@ -169,7 +170,12 @@ class watcher(object):
       self.run()
 
   def runOnce(self):
-    pass
+    """
+    Run for only one flight.
+    """
+    while self._num_flight == 0:
+      self.run()
+
 
   def run(self):
     """
@@ -223,6 +229,7 @@ class watcher(object):
           print e
 
         self._flying_now = False
+        self._num_flight += 1
 
     ## Flight is in progress
     else:
