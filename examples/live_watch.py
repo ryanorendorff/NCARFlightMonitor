@@ -71,6 +71,7 @@ if __name__ == "__main__":
                          variables=('ggalt', 'tasx', 'coraw_al'))
                          #variables=('psfdc', 'fo3_acd', 'co2_pic', 'ch4_pic'))
 
+
   ## Check that variables are in bounds
   #watch_server.attachBoundsCheck('co2_pic', 350, 500)
   #watch_server.attachBoundsCheck('ch4_pic', 1.7, 1.9)
