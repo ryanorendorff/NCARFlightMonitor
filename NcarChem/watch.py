@@ -130,7 +130,6 @@ class watcher(object):
     self._simulate_start_time=simulate_start_time
     self._simulate_file=simulate_file
     self._email = email
-    self._variables = NVarSet(variables)
 
     self._algos = []
     self._flying_now = False
@@ -143,6 +142,11 @@ class watcher(object):
                              simulate_file=self._simulate_file)
 
     self._updater = None  ## Interfaces with server to get regular updates.
+
+    if variables == None:
+      self._variables = NVarSet(self._server.variable_list)
+    else:
+      self._variables = NVarSet(variables)
 
   ## TODO: Determine if a queue is better
   def pnt(self, msg):
@@ -158,6 +162,9 @@ class watcher(object):
     """
     while(True):
       self.run()
+
+  def runOnce(self):
+    pass
 
   def run(self):
     """
@@ -176,8 +183,8 @@ class watcher(object):
 
       ## Just switched from flying to not flying.
       else:
-        self.pnt("[%s] Flight ending, acquiring two minutes of data." %\
-                  time_str())
+        print "[%s] Flight ending, acquiring two minutes of data." %\
+                  time_str()
         self._server.sleep(2 * 60) ## Get more data after landing
         self._updater.update() ## Get last bit of data.
 
@@ -191,12 +198,19 @@ class watcher(object):
           out_file.write(out_file_name,
                          self._server.getDatabaseStructure(),
                          labels, data)
+        except Exception, e:
+          print "Could not create data file"
+          print e
 
+        try:
           mail_time = time_str()
-          sendMail([self._email],
-                   "Data from flight " + mail_time, \
-                   "Attached is data from flight on " + mail_time,
-                   [out_file_name])
+
+          ## TODO: Change email subject to project name and flight number
+          if self._email != "":
+            sendMail([self._email],
+                     "Data from flight " + mail_time, \
+                     "Attached is data from flight on " + mail_time,
+                     [out_file_name])
 
           print "[%s] Sent mail." % time_str()
         except Exception, e:
