@@ -109,7 +109,7 @@ class NDatabaseLiveUpdater(object):
     self._last_update_time = None
 
     ## Get all the variables is they are not specified
-    if variables == None:
+    if variables is None:
       self._vars = data.NVarSet(server.variable_list)
     else:
       self._vars = variables  ## of type NVarSet
@@ -159,17 +159,17 @@ class NDatabase(object):
 
     ## Time (which can be spoofed with the simulate parameters
     self._start_time = datetime.datetime.now()
-    self._current_time = simulate_start_time if simulate_start_time != None\
-                    else self._start_time
+    self._current_time = (simulate_start_time if simulate_start_time is not None
+                          else self._start_time)
 
     ## Simulate variables
     self._simulate_start_db = None
     self._simulate_start_time = simulate_start_time
-    self._simulate_fast = simulate_fast if simulate_start_time != None else\
-                          False
+    self._simulate_fast = (simulate_fast if simulate_start_time is not None else
+                           False)
 
     ## Error Checking
-    if database == None:
+    if database is None:
       raise ValueError('Database must be specified')
 
     ## Shorthand for C130 and GV
@@ -178,7 +178,7 @@ class NDatabase(object):
 
     ## If we are simulating from a file, load the file with
     ## a random database name
-    if simulate_file != None:
+    if simulate_file is not None:
       dbname = "test" + str(int(random.random() * 1000000))
       self._simulate_start_db = self._database
       tmp_db = self._database
@@ -210,7 +210,7 @@ class NDatabase(object):
       self._conn.close()
     except Exception, e:
       pass
-    if self._simulate_start_db != None and self._running == True:
+    if self._simulate_start_db is not None and self._running is True:
       try:
         ## Load library back in before finally taking stuff down
         import psycopg2
@@ -312,9 +312,9 @@ class NDatabase(object):
     """
     ## Use server now function if not in simulation mode, otherwise perform
     ## the SQL query with the simulated current time as the upper bound.
-    NOW = str(self._getSimulatedCurrentTime()) \
-          if self._simulate_start_time != None \
-          else "NOW()"
+    NOW = (str(self._getSimulatedCurrentTime())
+          if self._simulate_start_time is not None
+          else "NOW()")
 
     if isinstance(start_time, datetime.datetime):
       start_time = str(start_time)
@@ -324,7 +324,7 @@ class NDatabase(object):
 
     ## Variables to get. Will always get datetime.
     var_str = "datetime, "
-    if variables != None:
+    if variables is not None:
       for var in variables:
         if var in self.variable_list:
           var_str += var + ", "
@@ -342,7 +342,7 @@ class NDatabase(object):
     ## TODO: Clean time interval part of server.getData
     ## Start creating time interval string.
     time_interval = ""
-    if   end_time == None and start_time != None and number_entries == None:
+    if   end_time is None and start_time is not None and number_entries is None:
       ## Assume -# INTERVAL syntax, SQL style.
       if start_time[0] == "-" or start_time[0] == "+":
         if self._simulate_start_time:
@@ -353,12 +353,12 @@ class NDatabase(object):
           time_interval = "WHERE datetime > " + NOW + " " + \
                           start_time[0] + " interval '" + start_time[1:] + "'"
       else: ## Assume explicit date given, SQL style.
-        if self._simulate_start_time != None:
+        if self._simulate_start_time is not None:
           time_interval = "WHERE (datetime > '%s' \
                                   AND datetime <= '%s')" % (start_time, NOW)
         else:
           time_interval = "WHERE datetime > '" + start_time + "'"
-    elif end_time == None and start_time != None and number_entries != None:
+    elif end_time is None and start_time is not None and number_entries is not None:
       if start_time[0] == "-" or start_time[0] == "+":
         if self._simulate_start_time:
           time_interval = "WHERE datetime > (timestamp '" + NOW + \
@@ -367,14 +367,14 @@ class NDatabase(object):
           time_interval = "WHERE datetime > " + NOW + " " + \
                           start_time[0] + " interval '" + start_time[1:] + "'"
       else: ## Assume explicit date given, SQL style.
-        if self._simulate_start_time != None:
+        if self._simulate_start_time is not None:
           time_interval = "WHERE (datetime > '%s' \
                                   AND datetime <= '%s')" % (start_time, NOW)
         else:
           time_interval = "WHERE datetime > '" + start_time + "'"
       time_interval += " ORDER BY datetime ASC LIMIT " + str(number_entries)
-    elif end_time == None and start_time == None and number_entries != None:
-      if self._simulate_start_time != None:
+    elif end_time is None and start_time is None and number_entries is not None:
+      if self._simulate_start_time is not None:
         time_interval = "WHERE datetime <= '%s' \
                          ORDER BY datetime DESC LIMIT %s" \
                         % (NOW, str(number_entries))
@@ -460,7 +460,7 @@ class NDatabase(object):
         ## Similarly data_type does not give the length of a char array.
         ## It must be reconstructed as character(#) from the SQL variable
         ## character_maximum_length. Does not affect not char values.
-        col_type = col_base_type + ('(' + str(col[3]) + ')' if col[3] != None else "")
+        col_type = col_base_type + ('(' + str(col[3]) + ')' if col[3] is not None else "")
 
         ## Make some values forced to be something besides NULL
         col_null = 'NOT NULL' if col[2] == 'NO' else ''

@@ -135,7 +135,7 @@ class watcher(object):
     self._flying_now = False
     self._num_flight = 0
 
-    if self._simulate_file != None:
+    if self._simulate_file is not None:
       self._server = NDatabase(database=self._database,
                                host=self._host,
                                user=self._user,
@@ -149,7 +149,7 @@ class watcher(object):
 
     self._updater = None  ## Interfaces with server to get regular updates.
 
-    if variables == None:
+    if variables is None:
       self._variables = NVarSet(self._server.variable_list)
     else:
       self._variables = NVarSet(variables)

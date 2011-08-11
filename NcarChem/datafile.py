@@ -88,7 +88,7 @@ def _SqlFromHeader(header):
                         (info[0], info[1], tbl_name, info[2]),)
 
         ## Create table insertion commands
-        if tbl_data != None:
+        if tbl_data is not None:
           INSERT_CMD="INSERT INTO %s VALUES (" % tbl_name
 
           ## Format values, all flanked with ''
@@ -220,15 +220,15 @@ class NRTFile(object):
     data information.
     """
     ## Replace information if provided to function
-    if header != None:
+    if header is not None:
       self.setHeader(header)
       header=self.header
     else:
       header = ""
-    if labels != None:
+    if labels is not None:
       self.setLabels(labels)
       labels=self.labels
-    if data != None:
+    if data is not None:
       self.setData(data)
       data=self.data
     if file_name == "":
@@ -287,7 +287,7 @@ if __name__ == "__main__":
   print "-----------------------------------------------------------------" + \
         "\nSQL Commands\n" + \
         "-----------------------------------------------------------------"
-  if nfile.header != None:
+  if nfile.header is not None:
     print nfile.getSql()
   print "-----------------------------------------------------------------" + \
         "\nLabels\n" + \
