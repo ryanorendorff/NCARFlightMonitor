@@ -134,12 +134,17 @@ class watcher(object):
     self._algos = []
     self._flying_now = False
 
-    self._server = NDatabase(database=self._database,
-                             host=self._host,
-                             user=self._user,
-                             simulate_start_time=self._simulate_start_time,
-                             simulate_fast=True,
-                             simulate_file=self._simulate_file)
+    if self._simulate_file != None:
+      self._server = NDatabase(database=self._database,
+                               host=self._host,
+                               user=self._user,
+                               simulate_start_time=self._simulate_start_time,
+                               simulate_fast=True,
+                               simulate_file=self._simulate_file)
+    else:
+      self._server = NDatabase(database=self._database,
+                               host=self._host,
+                               user=self._user)
 
     self._updater = None  ## Interfaces with server to get regular updates.
 
