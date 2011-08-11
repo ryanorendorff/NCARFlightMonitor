@@ -161,12 +161,12 @@ class NDatabase(object):
     self._start_time = datetime.datetime.now()
     self._current_time = simulate_start_time if simulate_start_time != None\
                     else self._start_time
-                          False
 
     ## Simulate variables
     self._simulate_start_db = None
     self._simulate_start_time = simulate_start_time
     self._simulate_fast = simulate_fast if simulate_start_time != None else\
+                          False
 
     ## Error Checking
     if database == None:
@@ -195,8 +195,8 @@ class NDatabase(object):
                     table_name='raf_lrt'")
     variable_list = cursor.fetchall()
 
-    ## Variable list is originally reversed.
-    self.variable_list = variable_list.reverse()
+    ## Variable list is a list of single entry tuples, make into tuple
+    self.variable_list = tuple([ col[0] for col in variable_list])
 
     ## Get flight information
     cursor.execute("SELECT * FROM global_attributes;")
@@ -410,10 +410,11 @@ class NDatabase(object):
 
     ## Get a list of Tables
     cursor.execute("SELECT table_name FROM information_schema.tables " +\
-                   "WHERE table_type = 'BASE TABLE' " +\
+                   "WHERE table_type = 'BASE TABLE' "+\
                    "AND table_schema NOT IN " +\
                      "('pg_catalog', 'information_schema');")
-    tables = tuple([col[0] for col in cursor.fetchall()])
+    tables = cursor.fetchall()
+    tables = tuple([col[0] for col in tables])
 
     ## Get a list of constrains on those tables, as a dict{tbl_name:constrain}
     cursor.execute("SELECT t.table_name, k.column_name " + \
@@ -436,8 +437,8 @@ class NDatabase(object):
                      "column_name, data_type, is_nullable, " +\
                      "character_maximum_length, udt_name " +\
                      "FROM information_schema.columns " +\
-                     "WHERE TABLE_NAME = '%s' " +\
-                     "ORDER BY ordinal_position;" % table);
+                     "WHERE TABLE_NAME = '%s' " % table +\
+                     "ORDER BY ordinal_position;");
       columns = cursor.fetchall()
 
       ## Each column string is (COLUMNS, (col1, type, null?), etc)
