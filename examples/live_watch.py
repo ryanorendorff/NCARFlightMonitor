@@ -66,7 +66,8 @@ if __name__ == "__main__":
                          user="postgres",
                          simulate_start_time=
                            datetime.datetime(2011, 8, 9, 14, 0, 0),
-                         simulate_file=sys.argv[1])
+                         simulate_file=sys.argv[1],
+                         header=False)
                          #email="ryano@ucar.edu",
                          #variables=('ggalt', 'tasx', 'coraw_al'))
                          #variables=('psfdc', 'fo3_acd', 'co2_pic', 'ch4_pic'))

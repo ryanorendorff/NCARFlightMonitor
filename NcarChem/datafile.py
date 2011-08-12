@@ -222,7 +222,7 @@ class NRTFile(object):
     ## Replace information if provided to function
     if header is not None:
       self.setHeader(header)
-      header=self.header
+      header=self.header + "\n"
     else:
       header = ""
     if labels is not None:
@@ -242,6 +242,8 @@ class NRTFile(object):
     for variable in labels[1:]:
       label_str += ',%s' % variable.upper()
 
+    label_str += "\n"
+
     ## Start outputting data
     data_str = ""
     for row in data:
@@ -256,13 +258,13 @@ class NRTFile(object):
     ## Try really hard to write the file.
     try:
       f = open(file_name, 'w')
-    except Exception, e:
+    except IOError, e:
       print >>sys.stderr, "Could not open file %s for writing." % file_name
       return
 
     try:
-      f.write(header + '\n' + label_str + '\n' + data_str)
-    except Exception, e:
+      f.write("%s%s%s" % (header, label_str, data_str))
+    except IOError, e:
       print >>sys.stderr, "Could not write to file %s" % file_name
 
     ## Only needed if open did not work.

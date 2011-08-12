@@ -115,7 +115,8 @@ class watcher(object):
                      user="ads",  ## ads is the default used at eol.
                      simulate_start_time=False,  ## Change clock
                      simulate_file=None,  ## Load a  file sql database.
-                     email="",  ## Used to email results after flight.
+                     email=None,  ## Used to email results after flight.
+                     header=False,
                      variables=None,  ## List of variables to watch.
                      *extra,  ## to prevent bitching
                      **kwds):
@@ -130,6 +131,7 @@ class watcher(object):
     self._simulate_start_time=simulate_start_time
     self._simulate_file=simulate_file
     self._email = email
+    self._header = header
 
     self._algos = []
     self._flying_now = False
@@ -208,9 +210,16 @@ class watcher(object):
           out_file_name = output_file_str(self._server)
           out_file = NRTFile()
           labels, data = self._variables.getDataAsList()
-          out_file.write(out_file_name,
-                         self._server.getDatabaseStructure(),
-                         labels, data)
+          if self._header == False:
+            out_file.write(file_name=out_file_name,
+                           labels=labels,
+                           data=data)
+          else:
+            out_file.write(file_name=out_file_name,
+                           header=self._server.getDatabaseStructure(),
+                           labels=labels,
+                           data=data)
+
         except Exception, e:
           print "Could not create data file"
           print e
@@ -219,7 +228,7 @@ class watcher(object):
           mail_time = time_str()
 
           ## TODO: Change email subject to project name and flight number
-          if self._email != "":
+          if self._email is not None:
             sendMail([self._email],
                      "Data from flight " + mail_time, \
                      "Attached is data from flight on " + mail_time,
@@ -236,7 +245,7 @@ class watcher(object):
     ## Flight is in progress
     else:
       if self._flying_now == False:  ## Just started flying
-        self.pnt("\n[%s] In Flight." % time_str())
+        self.pnt("[%s] In Flight." % time_str())
         self._flying_now = True
         self._waiting = False
         self._variables.clearData()
