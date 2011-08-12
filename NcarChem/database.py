@@ -225,7 +225,7 @@ class NDatabase(object):
         conn.close()
       except Exception, e:
         ## Did not work, but don't change error exit code
-        print "Could not clode simulated db"
+        print "Could not load simulated db"
 
   def stop(self):
     """

@@ -148,7 +148,7 @@ def _parseIntoHeaderLabelsData(file_str):
                            file_str, re.S)
     header = file_pieces.groups()[0]
     labels = file_pieces.groups()[1].upper().split(',')
-    data   = [row.split(',') for row in file_pieces.groups()[2].split('\n') if row != ""]
+    data   = [row.split(',') for row in file_pieces.groups()[2].rstrip('\n\r').split('\n') if row != ""]
 
     return header, labels, data
   except Exception, e:
