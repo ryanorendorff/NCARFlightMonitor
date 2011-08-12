@@ -166,10 +166,10 @@ class NRTFile(object):
   class and they can be written out using this class.
   """
   def __init__(self, file_name=""):
-    self.header = ""
-    self.labels = ""
+    self._header = ""
+    self._labels = ""
     self.variables = ""
-    self.data = ""
+    self._data = ""
     self.file_name = ""
 
     if file_name != "":
@@ -179,11 +179,14 @@ class NRTFile(object):
         print >>sys.stderr, "Could not open file %s" % file_name
       header, labels, data = _parseIntoHeaderLabelsData(file_str)
       labels, data = _concatTime(labels, data)
-      self.header = header
-      self.labels = labels
+      self._header = header
+      self._labels = labels
       self.variables = labels[1:]
-      self.data = data
+      self._data = data
       self.file_name = file_name
+
+  def getHeader(self):
+    return self._header
 
   def setHeader(self, sql_structure):
     """
@@ -191,28 +194,36 @@ class NRTFile(object):
     NDatabase.getDatabaseStructure.
     """
     for line in sql_structure.split('\n'):
-      self.header += "#! %s\n" % line
-    self.header = self.header.rstrip('\n')
+      self._header += "#! %s\n" % line
+    self._header = self._header.rstrip('\n')
+
+  def getLabels(self):
+    return self._labels
 
   def setLabels(self, labels):
     """
     Set variable list. Do not include datetime unless it was specifically
     added. This is a list/tuple.
     """
-    self.labels = labels
+    self._labels = labels
     self.variables = labels[1:]
 
+  def getData(self):
+    return self._data
+
   def setData(self, data):
-    """
-    Add in data matrix.
-    """
-    self.data = data
+    """ Add in data matrix.  """
+    self._data = data
+
+  header = property(getHeader,setHeader)
+  labels = property(getLabels,setLabels)
+  data = property(getData,setData)
 
   def getSql(self):
     """
     Return the header information parsed as SQL command list.
     """
-    return _SqlFromHeader(self.header)
+    return _SqlFromHeader(self._header)
 
   def write(self, file_name="", header=None, labels=None, data=None):
     """
@@ -222,15 +233,15 @@ class NRTFile(object):
     ## Replace information if provided to function
     if header is not None:
       self.setHeader(header)
-      header=self.header + "\n"
+      header=self._header + "\n"
     else:
       header = ""
     if labels is not None:
       self.setLabels(labels)
-      labels=self.labels
+      labels=self._labels
     if data is not None:
       self.setData(data)
-      data=self.data
+      data=self._data
     if file_name == "":
       file_name = self.file_name
     self.file_name = file_name

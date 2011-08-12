@@ -51,8 +51,7 @@ def createOrderedListFromFile(file_name):
 class NVarSet(OrderedDict):
   """
   Holds multiple NVars, and assumes that they are all the same size (this is
-  true from live aircraft data). Can export data as a list using
-  getDataAsList().
+  true from live aircraft data). Can export data as a list using .data
   """
 
   def __init__(self, var_start, *variables):
@@ -93,19 +92,23 @@ class NVarSet(OrderedDict):
                                                    for column in data])
         pos += 1
 
-  def getDataAsList(self):
+  @property
+  def labels(self):
+    """ Return the names associated with the columns in .data """
+    return tuple(['DATETIME'] + self.keys())
+
+  @property
+  def data(self):
     """
-    Return set as a list of headers and a 2D list matrix of data points, where
-    the datetime variable is first.
+    Return a 2D list matrix of data points, datetime variable is first.
     """
-    labels = tuple(['DATETIME'] + self.keys())
     data = []
     for counter in range(self._rows):
       line = (self._date[counter],)
       for var in OrderedDict.__iter__(self):
         line += (OrderedDict.__getitem__(self, var)[counter],)
       data += (line,)
-    return labels, data
+    return data
 
   def clearData(self):
     """
@@ -138,10 +141,9 @@ class NVar(OrderedDict):
         return OrderedDict.__getitem__(self, self._order[index])
     else:
       return OrderedDict.__getitem__(self, index)
+
   def getDate(self, index):
-    """
-    Returns the date associated with an integer index.
-    """
+    """ Returns the date associated with an integer index.  """
     if index < 0:
       return self._order[(OrderedDict.__len__(self) - 1) + index]
     else:
@@ -149,9 +151,7 @@ class NVar(OrderedDict):
 
 
   def getName(self):
-    """
-    Returns variable name.
-    """
+    """ Returns variable name.  """
     return self._name
 
   def addData(self, data=[]):
@@ -190,4 +190,4 @@ if __name__ == "__main__":
 
   olist = createOrderedListFromFile(sys.argv[1])
   print olist
-  print olist.getDataAsList()
+  print olist.data

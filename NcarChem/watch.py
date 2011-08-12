@@ -170,7 +170,8 @@ class watcher(object):
         try:
           out_file_name = output_file_str(self._server)
           out_file = NRTFile()
-          labels, data = self._variables.getDataAsList()
+          labels = self._variables.labels
+          data = self._variables.data
           if self._header == False:
             out_file.write(file_name=out_file_name,
                            labels=labels,

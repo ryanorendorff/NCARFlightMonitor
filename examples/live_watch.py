@@ -117,8 +117,8 @@ if __name__ == "__main__":
                                         user="postgres",
                                         simulate_start_time=
                                           datetime.datetime(2011, 8, 9, 14, 0, 0),
-                                        simulate_file=sys.argv[1],
-                                        email_fn = sendMail)
+                                        simulate_file=sys.argv[1])
+                                        #email_fn = sendMail)
 
 
   ## Check that variables are in bounds
