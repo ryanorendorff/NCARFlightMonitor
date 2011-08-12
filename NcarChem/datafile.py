@@ -168,7 +168,6 @@ class NRTFile(object):
   def __init__(self, file_name=""):
     self._header = ""
     self._labels = ""
-    self.variables = ""
     self._data = ""
     self.file_name = ""
 
@@ -181,14 +180,15 @@ class NRTFile(object):
       labels, data = _concatTime(labels, data)
       self._header = header
       self._labels = labels
-      self.variables = labels[1:]
       self._data = data
       self.file_name = file_name
 
-  def getHeader(self):
+  @property
+  def header(self):
     return self._header
 
-  def setHeader(self, sql_structure):
+  @header.setter
+  def header(self, sql_structure):
     """
     Set SQL header structure using SQL database structure string, see
     NDatabase.getDatabaseStructure.
@@ -197,27 +197,27 @@ class NRTFile(object):
       self._header += "#! %s\n" % line
     self._header = self._header.rstrip('\n')
 
-  def getLabels(self):
+  @property
+  def labels(self):
     return self._labels
 
-  def setLabels(self, labels):
+  @labels.setter
+  def labels(self, labels):
     """
     Set variable list. Do not include datetime unless it was specifically
     added. This is a list/tuple.
     """
     self._labels = labels
-    self.variables = labels[1:]
 
-  def getData(self):
+  @property
+  def data(self):
     return self._data
 
-  def setData(self, data):
+  @data.setter
+  def data(self, data):
     """ Add in data matrix.  """
     self._data = data
 
-  header = property(getHeader,setHeader)
-  labels = property(getLabels,setLabels)
-  data = property(getData,setData)
 
   def getSql(self):
     """
@@ -232,15 +232,15 @@ class NRTFile(object):
     """
     ## Replace information if provided to function
     if header is not None:
-      self.setHeader(header)
+      self.header = header
       header=self._header + "\n"
     else:
       header = ""
     if labels is not None:
-      self.setLabels(labels)
+      self.labels = labels
       labels=self._labels
     if data is not None:
-      self.setData(data)
+      self.data = data
       data=self._data
     if file_name == "":
       file_name = self.file_name

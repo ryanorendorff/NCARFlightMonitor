@@ -70,15 +70,15 @@ class watcher(object):
   functions can be added to this class though dynamic method attachments. For
   an example, see the main section of this source,
   """
-  def __init__(self, database=None,  ## Ex: GV
+  def __init__(self, database=None,
                      host="eol-rt-data.guest.ucar.edu",
-                     user="ads",  ## ads is the default used at eol.
-                     simulate_start_time=False,  ## Change clock
-                     simulate_file=None,  ## Load a  file sql database.
+                     user="ads",
+                     simulate_start_time=False,
+                     simulate_file=None,
                      header=False,
                      email_fn = None,
-                     variables=None,  ## List of variables to watch.
-                     *extra,  ## to prevent bitching
+                     variables=None,
+                     *extra,
                      **kwds):
     """
     Give the watcher class the database information and email to send the
@@ -127,16 +127,12 @@ class watcher(object):
     print msg
 
   def startWatching(self):
-    """
-    Runs run() all the time, operates in a 'daemon' mode
-    """
+    """ Runs run() all the time, operates in a 'daemon' mode """
     while(True):
       self.run()
 
   def runOnce(self):
-    """
-    Run for only one flight.
-    """
+    """ Run for only one flight.  """
     while self._num_flight == 0:
       self.run()
 
@@ -193,7 +189,7 @@ class watcher(object):
           if self._email is not None:
             self._email(self._server.getFlightInformation(), [out_file_name])
 
-          print "[%s] Sent mail." % time_str()
+            print "[%s] Sent mail." % time_str()
         except Exception, e:
           print "Could not send mail"
           print e
