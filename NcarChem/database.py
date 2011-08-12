@@ -194,6 +194,10 @@ class NDatabase(object):
     cursor.execute("SELECT column_name FROM Information_Schema.Columns WHERE\
                     table_name='raf_lrt'")
     variable_list = cursor.fetchall()
+    try:
+      variable_list.remove(('datetime',))
+    except ValueError:
+      pass
 
     ## Variable list is a list of single entry tuples, make into tuple
     self.variable_list = tuple([ col[0] for col in variable_list])
