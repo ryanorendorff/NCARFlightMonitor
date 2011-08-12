@@ -31,14 +31,6 @@ import datetime
 ## Allows methods to be injected into instantiated objects.
 import types
 
-## Email libraries
-import smtplib
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEBase import MIMEBase
-from email.MIMEText import MIMEText
-from email.Utils import COMMASPACE, formatdate
-from email import Encoders
-
 ## General
 import os
 import time
@@ -50,7 +42,7 @@ import time
 
 def time_str():
   """
-  Retyrns the current UTC time, no microseconds, as a string. A "Z" is attached
+  Returns the current UTC time, no microseconds, as a string. A "Z" is attached
   to the end to signify Zulu Time.
   """
   return str(datetime.datetime.utcnow().replace(microsecond=0)) + "Z"
@@ -65,38 +57,6 @@ def output_file_str(server):
   flight = info['FlightNumber']  ## Ex: rf12
   return '/tmp/%s-%s-%s.asc' % (project, flight, datetime.datetime.utcnow().\
                                 strftime("%Y_%m_%d-%H_%M_%S"))
-
-
-def sendMail(to, subject, text, files=[], server="localhost"):
-  """
-  Mail function copied from Stack Overflow. Uses gmail account for SMTP server.
-  """
-  assert type(to) == list
-  assert type(files) == list
-  fro = "ryano@ucar.edu"
-
-  msg = MIMEMultipart()
-  msg['From'] = fro
-  msg['To'] = COMMASPACE.join(to)
-  msg['Date'] = formatdate(localtime=True)
-  msg['Subject'] = subject
-
-  msg.attach(MIMEText(text))
-
-  for file in files:
-      part = MIMEBase('application', "octet-stream")
-      part.set_payload(open(file, "rb").read())
-      Encoders.encode_base64(part)
-      part.add_header('Content-Disposition', 'attachment; filename="%s"'
-                     % os.path.basename(file))
-      msg.attach(part)
-
-  pw = open(".pass", 'r').read()
-  server = smtplib.SMTP('smtp.gmail.com', 587)
-  server.starttls()
-  server.login("linux755@gmail.com", pw)
-  server.sendmail("ryano@ucar.edu", "ryano@ucar.edu", msg.as_string())
-  server.quit()
 
 
 ## --------------------------------------------------------------------------
@@ -115,8 +75,8 @@ class watcher(object):
                      user="ads",  ## ads is the default used at eol.
                      simulate_start_time=False,  ## Change clock
                      simulate_file=None,  ## Load a  file sql database.
-                     email=None,  ## Used to email results after flight.
                      header=False,
+                     email_fn = None,
                      variables=None,  ## List of variables to watch.
                      *extra,  ## to prevent bitching
                      **kwds):
@@ -130,8 +90,9 @@ class watcher(object):
     self._user=user
     self._simulate_start_time=simulate_start_time
     self._simulate_file=simulate_file
-    self._email = email
+
     self._header = header
+    self._email = email_fn if email_fn is not None else None
 
     self._algos = []
     self._flying_now = False
@@ -229,10 +190,7 @@ class watcher(object):
 
           ## TODO: Change email subject to project name and flight number
           if self._email is not None:
-            sendMail([self._email],
-                     "Data from flight " + mail_time, \
-                     "Attached is data from flight on " + mail_time,
-                     [out_file_name])
+            self._email(self._server.getFlightInformation(), [out_file_name])
 
           print "[%s] Sent mail." % time_str()
         except Exception, e:
