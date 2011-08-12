@@ -179,7 +179,7 @@ class watcher(object):
                            data=data)
 
         except Exception, e:
-          print "Could not create data file"
+          print "%s: Could not create data file" % self.__class__.__name__
           print e
 
         try:
@@ -191,7 +191,7 @@ class watcher(object):
 
             print "[%s] Sent mail." % time_str()
         except Exception, e:
-          print "Could not send mail"
+          print "%s: Could not send mail" % self.__class__.__name__
           print e
 
         self._flying_now = False
@@ -217,7 +217,7 @@ class watcher(object):
         try:
           algo.run()
         except Exception, e:
-          print "Could not run algorithm."
+          print "%s: Could not run algorithm." % self.__class__.__name__
           self._algos.remove(algo)
           print e
 

@@ -54,8 +54,9 @@ def _SqlFromHeader(header):
             tbl_data = None
           tbl_cmds = [col[0] for col in tbl_info]
         else:
-          print >>sys.stderr, "Table information line " + \
-                              "improperly formatted. Line %s" % cnt
+          print >>sys.stderr, ("%s: Table information line "
+                              "improperly formatted. Line %s" %
+                              (__name__, cnt))
 
         ## First command for a table
         SQL_CMD = "CREATE TABLE %s (" % tbl_name
@@ -111,8 +112,9 @@ def _SqlFromHeader(header):
                 ## Arrays are surrounded by {}
                 DATA += "'%s'," % str(value).replace('[', '{').replace(']', '}')
               else:
-                print >>sys.stderr, "Problem creating insert statement " +\
-                                    "for value %s, unknown type" % value
+                print >>sys.stderr, ("%s: Problem creating insert statement "
+                                    "for value %s, unknown type" %
+                                    (__name__, value))
 
             DATA = DATA.rstrip(', ')
             cmd_list += (INSERT_CMD + DATA + ");", )
@@ -152,7 +154,7 @@ def _parseIntoHeaderLabelsData(file_str):
 
     return header, labels, data
   except Exception, e:
-    print >>sys.stderr, "Could not parse file into header and data portions."
+    print >>sys.stderr, "%s: Could not parse file into header and data portions." % __name__
     print >>sys.stderr, e
 
 ## --------------------------------------------------------------------------
@@ -175,7 +177,7 @@ class NRTFile(object):
       try:
         file_str = open(file_name, "r").read()
       except:
-        print >>sys.stderr, "Could not open file %s" % file_name
+        print >>sys.stderr, "%s: Could not open file %s" % (self.__class__.__name__, file_name)
       header, labels, data = _parseIntoHeaderLabelsData(file_str)
       labels, data = _concatTime(labels, data)
       self._header = header
@@ -270,13 +272,13 @@ class NRTFile(object):
     try:
       f = open(file_name, 'w')
     except IOError, e:
-      print >>sys.stderr, "Could not open file %s for writing." % file_name
+      print >>sys.stderr, "%s: Could not open file %s for writing." % (self.__class__.__name__, file_name)
       return
 
     try:
       f.write("%s%s%s" % (header, label_str, data_str))
     except IOError, e:
-      print >>sys.stderr, "Could not write to file %s" % file_name
+      print >>sys.stderr, "%s: Could not write to file %s" % (self.__class__.__name__, file_name)
 
     ## Only needed if open did not work.
     try:

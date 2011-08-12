@@ -227,7 +227,7 @@ class NDatabase(object):
         conn.close()
       except Exception, e:
         ## Did not work, but don't change error exit code
-        print "Could not load simulated db"
+        print "%s: Could not load simulated db" % self.__class__.__name__
 
   def stop(self):
     """
@@ -331,8 +331,8 @@ class NDatabase(object):
         if var in self.variable_list or var is "datetime":
           var_str = ", ".join([var_str, var])
         else:
-          print >> sys.stderr, "Could not add variable %s, does not exist"\
-                                % var
+          print >> sys.stderr, "%s: Could not add variable %s, does not exist"\
+                                % (self.__class__.__name__, var)
 
     ## All Aeros displayable data from raf_lrt
     sql_command += var_str + " FROM raf_lrt "
@@ -382,7 +382,7 @@ class NDatabase(object):
       else:
         time_interval = " ORDER BY datetime DESC LIMIT " + str(number_entries)
     else:
-      print >> sys.stderr, "Invalid time scale change"
+      print >> sys.stderr, "%s: Invalid time scale change" % self.__class__.__name__
       return
 
     sql_command += time_interval + ";"
@@ -391,7 +391,7 @@ class NDatabase(object):
       cursor.execute(sql_command)
       data = cursor.fetchall()
     except Exception, e:
-      print >> sys.stderr, "SQL Command failed: " + sql_command
+      print >> sys.stderr, "%s: SQL Command failed: %s" % (self.__class__.__name__, sql_command)
       self._sql_bad_attempts += 1
       if self._sql_bad_attempts % 10 == 0:
         print >> sys.stderr, "Ten SQL commands failed, \
