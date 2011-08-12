@@ -134,6 +134,7 @@ class watcher(object):
     self._algos = []
     self._flying_now = False
     self._num_flight = 0
+    self._waiting = False
 
     if self._simulate_file is not None:
       self._server = NDatabase(database=self._database,
@@ -189,13 +190,14 @@ class watcher(object):
     if not self._server.flying():
       if self._flying_now == False:  ## No flight in progress.
         self._server.reconnect()  ## Done to ensure good connection.
-        print "[%s] Waiting for flight." % time_str()
+        if self._waiting is False:
+          print "[%s] Waiting for flight." % time_str()
+          self._waiting = True
         self._server.sleep(5 * 60)  ## Look for another flight in 5 minutes.
 
       ## Just switched from flying to not flying.
       else:
-        print "[%s] Flight ending, acquiring two minutes of data." %\
-                  time_str()
+        self.pnt("[%s] Flight ending." % time_str())
         self._server.sleep(2 * 60) ## Get more data after landing
         self._updater.update() ## Get last bit of data.
 
@@ -236,6 +238,7 @@ class watcher(object):
       if self._flying_now == False:  ## Just started flying
         self.pnt("\n[%s] In Flight." % time_str())
         self._flying_now = True
+        self._waiting = False
         self._variables.clearData()
         ##  Get preflight data
         self._variables.addData(self._server.getData(start_time="-60 MINUTE",
