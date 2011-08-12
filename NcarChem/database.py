@@ -69,9 +69,7 @@ def _loadFile(file_path, dbname, host, user, password, dbstart):
   for cmd in SQL_CMDS:
     cursor.execute(cmd)
 
-  VARS = ""
-  for var in labels:
-    VARS += "%s," % var.lower()
+  VARS = ",".join(labels).lower()
 
   ## Add data into test dataabase
   INSERT_CMD = "INSERT INTO raf_lrt (" + VARS.rstrip(', ') + ") VALUES (%s);"
@@ -327,15 +325,14 @@ class NDatabase(object):
     sql_command = "SELECT "
 
     ## Variables to get. Will always get datetime.
-    var_str = "datetime, "
+    var_str = "datetime"
     if variables is not None:
       for var in variables:
-        if var in self.variable_list:
-          var_str += var + ", "
+        if var in self.variable_list or var is "datetime":
+          var_str = ", ".join([var_str, var])
         else:
           print >> sys.stderr, "Could not add variable %s, does not exist"\
                                 % var
-    var_str = var_str.rstrip(', ')
 
     ## All Aeros displayable data from raf_lrt
     sql_command += var_str + " FROM raf_lrt "
@@ -413,21 +410,21 @@ class NDatabase(object):
     cursor = self._conn.cursor()
 
     ## Get a list of Tables
-    cursor.execute("SELECT table_name FROM information_schema.tables " +\
-                   "WHERE table_type = 'BASE TABLE' "+\
-                   "AND table_schema NOT IN " +\
-                     "('pg_catalog', 'information_schema');")
+    cursor.execute(("SELECT table_name FROM information_schema.tables "
+                    "WHERE table_type = 'BASE TABLE' "
+                    "AND table_schema NOT IN "
+                      "('pg_catalog', 'information_schema');"))
     tables = cursor.fetchall()
     tables = tuple([col[0] for col in tables])
 
     ## Get a list of constrains on those tables, as a dict{tbl_name:constrain}
-    cursor.execute("SELECT t.table_name, k.column_name " + \
-                   "FROM information_schema.table_constraints " +\
-                   "T INNER JOIN information_schema.key_column_usage " +\
-                   "K ON T.CONSTRAINT_NAME = k.constraint_name " +\
-                   "WHERE T.CONSTRAINT_TYPE = 'PRIMARY KEY' -- " +\
-                   "AND T.TABLE_NAME = 'table_name' " +\
-                   "ORDER BY T.TABLE_NAME, K.ORDINAL_POSITION;")
+    cursor.execute(("SELECT t.table_name, k.column_name "
+                    "FROM information_schema.table_constraints "
+                    "T INNER JOIN information_schema.key_column_usage "
+                    "K ON T.CONSTRAINT_NAME = k.constraint_name "
+                    "WHERE T.CONSTRAINT_TYPE = 'PRIMARY KEY' -- "
+                    "AND T.TABLE_NAME = 'table_name' "
+                    "ORDER BY T.TABLE_NAME, K.ORDINAL_POSITION;"))
     constraints = dict(cursor.fetchall())
 
     ## Start building output string
@@ -437,12 +434,12 @@ class NDatabase(object):
       tbl_string = "%s=" % table
 
       ## Get the listing of columns and their data types.
-      cursor.execute("SELECT " +\
-                     "column_name, data_type, is_nullable, " +\
-                     "character_maximum_length, udt_name " +\
-                     "FROM information_schema.columns " +\
-                     "WHERE TABLE_NAME = '%s' " % table +\
-                     "ORDER BY ordinal_position;");
+      cursor.execute(("SELECT "
+                      "column_name, data_type, is_nullable, "
+                      "character_maximum_length, udt_name "
+                      "FROM information_schema.columns "
+                      "WHERE TABLE_NAME = '%s' "
+                      "ORDER BY ordinal_position;" % table))
       columns = cursor.fetchall()
 
       ## Each column string is (COLUMNS, (col1, type, null?), etc)
