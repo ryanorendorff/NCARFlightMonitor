@@ -197,7 +197,6 @@ class watcher(object):
         self._flying_now = False
         self._flight_end_time = self._server.getTime()
         self._num_flight += 1
-        self.resetAlgos()
 
     ## Flight is in progress
     else:
@@ -205,6 +204,7 @@ class watcher(object):
         self.pnt("[%s] In Flight." % self._server.getTimeStr())
         self._flight_start_time = self._server.getTime()
         self._flight_end_time = None
+        self.resetAlgos()
         self._flying_now = True
         self._waiting = False
         self._variables.clearData()
@@ -289,7 +289,6 @@ class watcher(object):
     algo.pnt = self.pnt  ## Allows message redirection.
     for var in variables:
       algo.variables += [self._variables[var]]
-    algo.setup(extra, kwds)  ## Can pass setup arbitrary inputs.
 
     self._algos += [algo]  ## Must be in [] to add to list
 
@@ -299,7 +298,9 @@ class watcher(object):
 
   def resetAlgos(self):
     """ Return to setup state. """
-    for algo in self._algos: algo.reset()
+    for algo in self._algos:
+      algo.reset()
+      algo.flight_start_time = self._flight_start_time
 
 ## --------------------------------------------------------------------------
 ## Start command line interface (main)

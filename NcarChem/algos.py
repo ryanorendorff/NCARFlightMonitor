@@ -32,9 +32,20 @@ class NAlgorithm(object):
     self.last_date = datetime.datetime(1970, 1, 1, 0, 0, 0)
     self.variables = []  ## NVar type
     self.updated = False
+    self._flight_start_time = None
+
 
     self.setup = lambda : None
     self.process = lambda : None
+
+  ## algo._flight_start_time is a shallow copy!
+  @property
+  def flight_start_time(self):
+    return self._flight_start_time
+
+  @flight_start_time.setter
+  def flight_start_time(self, value):
+    self._flight_start_time = value
 
   def run(self):
     new_date = self.variables[0].getDate(-1)
