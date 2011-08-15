@@ -41,14 +41,6 @@ import time
 ## Functions
 ## --------------------------------------------------------------------------
 
-def time_str():
-  """
-  Returns the current UTC time, no microseconds, as a string. A "Z" is attached
-  to the end to signify Zulu Time.
-  """
-  return str(datetime.datetime.utcnow().replace(microsecond=0)) + "Z"
-
-
 def output_file_str(flight_info):
   """
   Create output file string, which contains the flight and project number.
@@ -153,13 +145,13 @@ class watcher(object):
       if self._flying_now == False:  ## No flight in progress.
         self._server.reconnect()  ## Done to ensure good connection.
         if self._waiting is False:
-          print "[%s] Waiting for flight." % time_str()
+          print "[%s] Waiting for flight." % self._server.getTimeStr()
           self._waiting = True
         self._server.sleep(5 * 60)  ## Look for another flight in 5 minutes.
 
       ## Just switched from flying to not flying.
       else:
-        self.pnt("[%s] Flight ending." % time_str())
+        self.pnt("[%s] Flight ending." % self._server.getTimeStr())
         self._server.sleep(2 * 60) ## Get more data after landing
         self._updater.update() ## Get last bit of data.
 
@@ -168,7 +160,7 @@ class watcher(object):
         else:
           out_file_name = self._output_file_path
         print ("[%s] Outputting file to %s" %
-               (time_str(), out_file_name))
+               (self._server.getTimeStr(), out_file_name))
         try:
           out_file = NRTFile()
           labels = self._variables.labels
@@ -188,13 +180,13 @@ class watcher(object):
           print e
 
         try:
-          mail_time = time_str()
+          mail_time = self._server.getTimeStr()
 
           ## TODO: Change email subject to project name and flight number
           if self._email is not None:
             self._email(self._server.getFlightInformation(), [out_file_name])
 
-            print "[%s] Sent mail." % time_str()
+            print "[%s] Sent mail." % self._server.getTimeStr()
         except Exception, e:
           print "%s: Could not send mail" % self.__class__.__name__
           print e
@@ -205,7 +197,7 @@ class watcher(object):
     ## Flight is in progress
     else:
       if self._flying_now == False:  ## Just started flying
-        self.pnt("[%s] In Flight." % time_str())
+        self.pnt("[%s] In Flight." % self._server.getTimeStr())
         self._flying_now = True
         self._waiting = False
         self._variables.clearData()
