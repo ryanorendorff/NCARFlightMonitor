@@ -34,7 +34,7 @@ def createOrderedList(variables):
   """
   var_list = []
   for var in variables:
-    var_list.append((var, NVar(var)))
+    var_list.append((var.lower(), NVar(var)))
 
   return var_list
 
@@ -100,9 +100,7 @@ class NVarSet(OrderedDict):
 
   @property
   def data(self):
-    """
-    Return a 2D list matrix of data points, datetime variable is first.
-    """
+    """ Return a 2D list matrix of data points, datetime variable is first. """
     data = []
     for counter in range(self._rows):
       line = (self._date[counter],)
@@ -110,10 +108,6 @@ class NVarSet(OrderedDict):
         line += (OrderedDict.__getitem__(self, var)[counter],)
       data += (line,)
     return data
-
-  def getNVar(self, variable):
-    if variable.upper() in self.keys():
-      return self.__getitem__(variable.upper())
 
   def clearData(self):
     """
@@ -133,31 +127,37 @@ class NVar(OrderedDict):
   """
 
   def __init__(self, name=None):
-    self._name = name.lower()
+    self.name = name.lower()
     self._order = {}
+    self._date_order = {}
     super(NVar, self).__init__()
 
   def __getitem__(self, item):
     if isinstance(item, slice):
       data = []
 
-      print item.start
       if isinstance(item.start, datetime.datetime):
-        start = [k for k, v in self._order.iteritems() if v == item.start][0]
+        start = self._date_order[item.start]
       else:
-        if item.start < 0:
-          start = OrderedDict.__len__(self) + item.start
+        if item.start is None:
+          start = 0
         else:
-          start = item.start
+          if item.start < 0:
+            start = OrderedDict.__len__(self) + item.start
+          else:
+            start = item.start
       if isinstance(item.stop, datetime.datetime):
-        end = [k for k, v in self._order.iteritems() if v == item.stop][0]
+        stop = self._date_order[item.stop]
       else:
         if item.stop is None:
-          end = OrderedDict.__len__(self)
+          stop = OrderedDict.__len__(self)
         else:
-          end = item.stop
+          if item.stop < 0:
+            stop = OrderedDict.__len__(self) + item.stop
+          else:
+            stop = item.stop
 
-      for point in range(start, end):
+      for point in range(start, stop):
         data += [self.__getitem__(point)]
 
       return data
@@ -171,17 +171,45 @@ class NVar(OrderedDict):
       return OrderedDict.__getitem__(self, item)
 
 
+  def __add__(self, y):
+    data = []
+
+    name = None
+    x_name = self.name
+    y_name = None
+
+    for k, v in self.iteritems():
+      data += [(k, v)]
+
+    if isinstance(y, NVar):
+      y_name = y.name
+      for k, v in y.iteritems():
+        data += [(k, v)]
+    else:
+      data += y
+
+    data.sort(key=lambda x: x[0])
+
+    if x_name == y_name and (x_name is not None and y_name is not None):
+      name = x_name
+    elif x_name is not None and y_name is None:
+      name = x_name
+    elif x_name is None and y_name is not None:
+      name = y_name
+    else:
+      raise ValueError('NVar: can only add NVars of the same name.')
+
+    if name is not None:
+      var = NVar(name)
+      var.addData(data)
+      return var
+
   def getDate(self, index):
     """ Returns the date associated with an integer index.  """
     if index < 0:
-      return self._order[(OrderedDict.__len__(self) - 1) + index]
+      return self._order[(OrderedDict.__len__(self)) + index]
     else:
       return self._order[index]
-
-
-  def getName(self):
-    """ Returns variable name.  """
-    return self._name
 
   def addData(self, data=[]):
     """
@@ -193,10 +221,21 @@ class NVar(OrderedDict):
 
     self.__mergeData(data)
 
-  ## Does not make any assumptions about the data inside the containter.
   def __mergeData(self, data):
+    try:
+      if not isinstance(data[0][0], datetime.datetime):
+        raise ValueError
+      try:
+        data[0][1]
+      except Exception:
+        raise ValueError
+
+    except ValueError, e:
+      raise ValueError('NVar: Data must be formatted as [(datetime, value), ...]')
+
     for row in data:
       self._order[OrderedDict.__len__(self)] = row[0]
+      self._date_order[row[0]] = OrderedDict.__len__(self)
       OrderedDict.__setitem__(self, row[0], row[1])
 
   def clearData(self):
@@ -220,13 +259,17 @@ if __name__ == "__main__":
   olist = createOrderedListFromFile(sys.argv[1])
   print "Printing NVarSet:\n%s" % olist
   print "Printing NvarSet[-1:]:\n%s" % olist.data[-1:]
-  #print "NVarSet[-1:]" % olist[-1:]
   if olist.data[:] == olist.data:
     print "NVarSet[:] the same as olist.data"
-  tasx = olist.getNVar('tasx')
-  #print tasx[:]
-  print tasx
-  print tasx[-1]
+  tasx = olist['tasx']
+  print tasx[:]
   print tasx[datetime.datetime(2011,8,11,13,14,6)]
+  print tasx[-1]
   print tasx[datetime.datetime(2011, 8, 11, 13, 14, 6):]
-  #print tasx[-2:]
+
+  ggalt = NVar('ggalt')
+  ggalt += [(datetime.datetime(2011,8,11,13,14,16), 0.453), (datetime.datetime(2011,8,11,13,14,11), 0.5)]
+  ggalt_2 = NVar('ggalt')
+  ggalt_2 += [(datetime.datetime(2011,8,11,13,14,6),0.2)]
+  ggalt_3 = ggalt + ggalt_2
+  print ggalt_3[:]
