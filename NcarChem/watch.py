@@ -78,6 +78,7 @@ class watcher(object):
                      simulate_file=None,
                      header=False,
                      email_fn = None,
+                     output_file_path=None,
                      variables=None,
                      *extra,
                      **kwds):
@@ -94,6 +95,7 @@ class watcher(object):
 
     self._header = header
     self._email = email_fn if email_fn is not None else None
+    self._output_file_path = output_file_path
 
     self._algos = []
     self._flying_now = False
@@ -161,7 +163,10 @@ class watcher(object):
         self._server.sleep(2 * 60) ## Get more data after landing
         self._updater.update() ## Get last bit of data.
 
-        out_file_name = output_file_str(self._server.getFlightInformation())
+        if self._output_file_path is None:
+          out_file_name = output_file_str(self._server.getFlightInformation())
+        else:
+          out_file_name = self._output_file_path
         print ("[%s] Outputting file to %s" %
                (time_str(), out_file_name))
         try:
