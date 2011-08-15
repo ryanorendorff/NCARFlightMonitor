@@ -33,6 +33,7 @@ import types
 
 ## General
 import os
+import tempfile
 import time
 
 
@@ -48,15 +49,15 @@ def time_str():
   return str(datetime.datetime.utcnow().replace(microsecond=0)) + "Z"
 
 
-def output_file_str(server):
+def output_file_str(flight_info):
   """
   Create output file string, which contains the flight and project number.
   """
-  info = server.getFlightInformation()  ## Updated when flight detected.
-  project = info['ProjectNumber']  ## Ex: ICE-T
-  flight = info['FlightNumber']  ## Ex: rf12
-  return '/tmp/%s-%s-%s.asc' % (project, flight, datetime.datetime.utcnow().\
-                                strftime("%Y_%m_%d-%H_%M_%S"))
+  project = flight_info['ProjectNumber']  ## Ex: ICE-T
+  flight = flight_info['FlightNumber']  ## Ex: rf12
+
+  file_path = tempfile.gettempdir() + os.sep + "-".join( [project, flight, datetime.datetime.utcnow().strftime("%Y_%m_%d-%H_%M_%S")]) + os.extsep + "asc"
+  return file_path
 
 
 ## --------------------------------------------------------------------------
@@ -160,11 +161,10 @@ class watcher(object):
         self._server.sleep(2 * 60) ## Get more data after landing
         self._updater.update() ## Get last bit of data.
 
-        print "[%s] Outputting file to %s" %\
-               (time_str(), output_file_str(self._server))
-        out_file_name = output_file_str(self._server)
+        out_file_name = output_file_str(self._server.getFlightInformation())
+        print ("[%s] Outputting file to %s" %
+               (time_str(), out_file_name))
         try:
-          out_file_name = output_file_str(self._server)
           out_file = NRTFile()
           labels = self._variables.labels
           data = self._variables.data
