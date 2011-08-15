@@ -44,3 +44,10 @@ class NAlgorithm(object):
       self.last_date = new_date
     else:
       self.updated = False
+
+  def reset(self):
+    try:
+      self.setup()
+    except Exception, e:
+      print "Could not rerun setup command."
+      print e

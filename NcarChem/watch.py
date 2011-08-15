@@ -90,7 +90,10 @@ class watcher(object):
     self._output_file_path = output_file_path
 
     self._algos = []
+
     self._flying_now = False
+    self._flight_start_time = None
+    self._flight_end_time = None
     self._num_flight = 0
     self._waiting = False
 
@@ -192,12 +195,16 @@ class watcher(object):
           print e
 
         self._flying_now = False
+        self._flight_end_time = self._server.getTime()
         self._num_flight += 1
+        self.resetAlgos()
 
     ## Flight is in progress
     else:
       if self._flying_now == False:  ## Just started flying
         self.pnt("[%s] In Flight." % self._server.getTimeStr())
+        self._flight_start_time = self._server.getTime()
+        self._flight_end_time = None
         self._flying_now = True
         self._waiting = False
         self._variables.clearData()
@@ -286,6 +293,13 @@ class watcher(object):
 
     self._algos += [algo]  ## Must be in [] to add to list
 
+  def removeAlgos(self):
+    """ Remove all attached algorithms. """
+    for algo in self._algos: self._algos.remove(algo)
+
+  def resetAlgos(self):
+    """ Return to setup state. """
+    for algo in self._algos: algo.reset()
 
 ## --------------------------------------------------------------------------
 ## Start command line interface (main)

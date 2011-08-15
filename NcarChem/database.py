@@ -278,11 +278,12 @@ class NDatabase(object):
       time.sleep(sleep_time)
 
   def getTimeStr(self):
-    """
-    Returns the most recent datapoint time with a Z attached to signify
-    Zulu time.
-    """
+    """ Returns the most recent datapoint time with a Z for Zulu time.  """
     return str(self._getSimulatedCurrentTime()) + "Z"
+
+  def getTime(self):
+    """ Returns latest datapoint time as datetime object """
+    return self._getSimulatedCurrentTime()
 
 
   def getFlightInformation(self):
