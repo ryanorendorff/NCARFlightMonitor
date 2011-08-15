@@ -21,6 +21,8 @@ from datafile import NRTFile
 ## New data type, not supported below python 2.7
 from collections import OrderedDict
 
+import datetime
+
 ## --------------------------------------------------------------------------
 ## Functions
 ## --------------------------------------------------------------------------
@@ -38,7 +40,7 @@ def createOrderedList(variables):
 
 def createOrderedListFromFile(file_name):
   nfile = NRTFile(file_name)
-  olist = NVarSet(nfile.variables)
+  olist = NVarSet(nfile.labels[1:])
   olist.addData(nfile.data)
   return olist
 
@@ -57,7 +59,6 @@ class NVarSet(OrderedDict):
   def __init__(self, var_start, *variables):
     """
     Init function can take either a python list of variables or every variable
-
     listed as a parameter.
     """
     self._str = ""
@@ -110,6 +111,10 @@ class NVarSet(OrderedDict):
       data += (line,)
     return data
 
+  def getNVar(self, variable):
+    if variable.upper() in self.keys():
+      return self.__getitem__(variable.upper())
+
   def clearData(self):
     """
     Removes all data from the set, keeps variable list.
@@ -132,15 +137,39 @@ class NVar(OrderedDict):
     self._order = {}
     super(NVar, self).__init__()
 
-  def __getitem__(self, index):
-    if isinstance(index, int):
-      if index < 0:
-        return OrderedDict.__getitem__(self,
-                 self._order[(OrderedDict.__len__(self)-1) + index])
+  def __getitem__(self, item):
+    if isinstance(item, slice):
+      data = []
+
+      print item.start
+      if isinstance(item.start, datetime.datetime):
+        start = [k for k, v in self._order.iteritems() if v == item.start][0]
       else:
-        return OrderedDict.__getitem__(self, self._order[index])
+        if item.start < 0:
+          start = OrderedDict.__len__(self) + item.start
+        else:
+          start = item.start
+      if isinstance(item.stop, datetime.datetime):
+        end = [k for k, v in self._order.iteritems() if v == item.stop][0]
+      else:
+        if item.stop is None:
+          end = OrderedDict.__len__(self)
+        else:
+          end = item.stop
+
+      for point in range(start, end):
+        data += [self.__getitem__(point)]
+
+      return data
+    if isinstance(item, int):
+      if item < 0:
+        return OrderedDict.__getitem__(self,
+                 self._order[(OrderedDict.__len__(self)) + item])
+      else:
+        return OrderedDict.__getitem__(self, self._order[item])
     else:
-      return OrderedDict.__getitem__(self, index)
+      return OrderedDict.__getitem__(self, item)
+
 
   def getDate(self, index):
     """ Returns the date associated with an integer index.  """
@@ -189,5 +218,15 @@ if __name__ == "__main__":
   import sys
 
   olist = createOrderedListFromFile(sys.argv[1])
-  print olist
-  print olist.data
+  print "Printing NVarSet:\n%s" % olist
+  print "Printing NvarSet[-1:]:\n%s" % olist.data[-1:]
+  #print "NVarSet[-1:]" % olist[-1:]
+  if olist.data[:] == olist.data:
+    print "NVarSet[:] the same as olist.data"
+  tasx = olist.getNVar('tasx')
+  #print tasx[:]
+  print tasx
+  print tasx[-1]
+  print tasx[datetime.datetime(2011,8,11,13,14,6)]
+  print tasx[datetime.datetime(2011, 8, 11, 13, 14, 6):]
+  #print tasx[-2:]
