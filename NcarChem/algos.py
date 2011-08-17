@@ -28,7 +28,6 @@ class NAlgorithm(object):
   process() function). This function does not currenetly accept parameters.
   """
   def __init__(self):
-    self.error = False  ## Used for error checking, caling, etc
     self.last_date = None
     self.variables = None
     self.updated = False
@@ -55,7 +54,7 @@ class NAlgorithm(object):
 
       new_data = self.variables.sliceWithTime(self.last_date, None)[1:]
       for point in new_data:
-        tm = point[0]
+        tm = "".join([str(point[0]), 'Z'])
         update = point[1:]
         try:
           self.process(tm, update)

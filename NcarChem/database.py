@@ -402,6 +402,11 @@ class NDatabase(object):
     cursor.close()
     return data
 
+  def getBadDataValues(self):
+    cursor = self._conn.cursor()
+    cursor.execute('select name, missing_value from variable_list ;')
+    return dict(cursor.fetchall())
+
   def getDatabaseStructure(self):
     """
     Get the database structure, return as string. See documentation for

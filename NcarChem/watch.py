@@ -104,6 +104,13 @@ class watcher(object):
                                simulate_start_time=self._simulate_start_time,
                                simulate_fast=True,
                                simulate_file=self._simulate_file)
+    elif self._simulate_start_time is not None:
+      self._server = NDatabase(database=self._database,
+                               host=self._host,
+                               user=self._user,
+                               simulate_start_time=self._simulate_start_time,
+                               simulate_fast=True)
+
     else:
       self._server = NDatabase(database=self._database,
                                host=self._host,
@@ -115,6 +122,8 @@ class watcher(object):
       self._variables = NVarSet(self._server.variable_list)
     else:
       self._variables = NVarSet(variables)
+
+    self._badDataCheck(self._variables.keys())
 
   ## TODO: Determine if a queue is better
   def pnt(self, msg):
@@ -197,6 +206,7 @@ class watcher(object):
         self._flying_now = False
         self._flight_end_time = self._server.getTime()
         self._num_flight += 1
+        self._variables.clearData()
 
     ## Flight is in progress
     else:
@@ -206,7 +216,6 @@ class watcher(object):
         self._flight_end_time = None
         self._flying_now = True
         self._waiting = False
-        self._variables.clearData()
         ##  Get preflight data
         self._variables.addData(self._server.getData(start_time="-60 MINUTE",
                                          variables=self._variables.keys()))
@@ -234,33 +243,32 @@ class watcher(object):
     Checks to see if a variable is within bounds. If not it calls pnt() to
     print a message to the user.
     """
-    def boundsCheckSetup(self, *extra, **kwds):
+    def boundsCheckSetup(self, *args, **kwds):
       """
       Setup function to give instantiated object persistent variables.
       """
       self.lower_bound = lower_bound
       self.upper_bound = upper_bound
-      self.variable = self.variables[0]
+      self.error = False
+      self.name = variable_name
 
-    def boundsCheck(self):
+    def boundsCheck(self, tm, data):
       """
       Determine if out of bounds, and only print a message once if so.
       """
-      val = self.variable[-1]
+      val = data[0]
 
       ## If out of range and was not so before
       if not(self.lower_bound <= val <= self.upper_bound) \
          and self.error == False:
         self.pnt("[%s] %s out of bounds." % \
-                  (str(self.variable.getDate(-1)) + "Z",
-                   self.variable.getName()))
+                  (tm, self.name))
         self.error = True
       ## If in range after being out of range
       elif self.lower_bound <= val <= self.upper_bound \
            and self.error == True:
         self.pnt("[%s] %s back in bounds." % \
-                   (str(self.variable.getDate(-1)) + "Z",
-                    self.variable.getName()))
+                   (tm, self.name))
         self.error=False
 
     ## Attach method to object of NAlgorithm
@@ -268,8 +276,30 @@ class watcher(object):
                     start_fn=boundsCheckSetup,
                     process_fn=boundsCheck)
 
-  def badDataCheck(self):
-    pass
+  def _badDataCheck(self, variables=None):
+    bad_data_flags = self._server.getBadDataValues()
+
+    for var in variables:
+      bad_flag = bad_data_flags[var.upper()]
+      self.__badDataForVariable(var, bad_flag)
+
+  def __badDataForVariable(self, variable_name=None, bad_flag=-32767):
+    def setup_bad(self, *args, **kwds):
+      self.out_of_bounds = bad_flag
+      self.error = False
+      self.name = variable_name
+
+    def process_bad(self, tm, data):
+      if data[0] == bad_flag and self.error == False:
+        self.pnt('[%s] %s MISSING DATA' % (tm, self.name))
+        self.error = True
+      elif data[0] != bad_flag and self.error == True:
+        self.pnt('[%s] %s no longer has missing data' % (tm, self.name))
+        self.error = False
+
+    self.attachAlgo(variables=[variable_name],
+                    start_fn=setup_bad,
+                    process_fn=process_bad)
 
   def attachAlgo(self, variables=None,
                        start_fn=None, process_fn=None,
