@@ -61,23 +61,104 @@ class NVarSet(OrderedDict):
     Init function can take either a python list of variables or every variable
     listed as a parameter.
     """
-    self._str = ""
-    self._rows = 0
-    self._date = []
+    self._str = None
+
+    def _isNVar():
+      var_list = []
+      for var in var_start:
+        var_list.append((var.name, var))
+
+      return var_list
 
     ## If input is just NVarSet('var1','var2'), convert into list
     if isinstance(var_start, list) and variables == ():
-      variables = tuple(var_start)
+      if isinstance(var_start[0], NVar):
+        var_list = _isNVar()
+      else:
+        var_list = createOrderedList(tuple(var_start))
     elif isinstance(var_start, tuple) and variables == ():
-      variables = var_start
+      if isinstance(var_start[0], NVar):
+        var_list = _isNVar()
+      else:
+        var_list = createOrderedList(var_start)
     else:
-      variables = (var_start,) + variables
+      var_list = createOrderedList((var_start,) + variables)
 
-    self._str = str(variables)
-    super(NVarSet, self).__init__(createOrderedList(variables))
+    self._str = str([var[0] for var in var_list])
+    self._time = var_list[0][1]
+    super(NVarSet, self).__init__(var_list)
 
   def __str__(self):
     return "NVarSet%s" % self._str
+
+  def __getitem__(self, item):
+    if isinstance(item, slice):
+      data = []
+
+      start, stop = self.__sliceToIndex(item)
+      for counter in range(start, stop):
+        data += (self.__getLine(pos=counter, add_time=False), )
+
+      return data
+
+    if isinstance(item, int):
+      ## item < 0 taken care of in NVar
+      return self.__getLine(pos=item, add_time=False)
+
+
+  def sliceWithTime(self, *args):
+    if len(args) == 1:
+      slc = slice(None, args[0], None)
+    elif len(args) == 2:
+      slc = slice(args[0], args[1], None)
+    else:
+      raise ValueError('sliceWithTime only accepts stop'
+                       'or start, stop arguments')
+    data = []
+
+    start, stop = self.__sliceToIndex(slc)
+    for counter in range(start, stop):
+      data += (self.__getLine(pos=counter, add_time=True), )
+
+    return data
+
+  def __getLine(self, pos=None, add_time=False):
+    if add_time is False:
+      line = ()
+    else:
+      line = (self._time.getTimeFromPos(pos), )
+
+    for var in OrderedDict.__iter__(self):
+      line += (OrderedDict.__getitem__(self, var)[pos],)
+
+    return line
+
+  def __sliceToIndex(self, item):
+    start = stop =  None
+
+    if isinstance(item.start, datetime.datetime):
+      start = self._time.getPosFromTime(item.start)
+    else:
+      if item.start is None:
+        start = 0
+      else:
+        if item.start < 0:
+          start = len(self._time) + item.start
+        else:
+          start = item.start
+
+    if isinstance(item.stop, datetime.datetime):
+      stop = self._pos_of_date[item.stop]
+    else:
+      if item.stop is None:
+        stop = len(self._time)
+      else:
+        if item.stop < 0:
+          stop = len(self._time) + item.stop
+        else:
+          stop = item.stop
+
+    return start, stop
 
   def addData(self, data):
     """
@@ -85,9 +166,7 @@ class NVarSet(OrderedDict):
     number of variables in the set.
     """
     if len(data) != 0:
-      self._rows += len(data)
       pos = 1
-      self._date += [column[0] for column in data]
       for var in OrderedDict.__iter__(self):
         OrderedDict.__getitem__(self, var).addData([(column[0], column[pos])\
                                                    for column in data])
@@ -98,16 +177,8 @@ class NVarSet(OrderedDict):
     """ Return the names associated with the columns in .data """
     return tuple(['DATETIME'] + self.keys())
 
-  @property
-  def data(self):
-    """ Return a 2D list matrix of data points, datetime variable is first. """
-    data = []
-    for counter in range(self._rows):
-      line = (self._date[counter],)
-      for var in OrderedDict.__iter__(self):
-        line += (OrderedDict.__getitem__(self, var)[counter],)
-      data += (line,)
-    return data
+  def getNVar(self, name):
+    return OrderedDict.__getitem__(self, name)
 
   def clearData(self):
     """
@@ -115,7 +186,6 @@ class NVarSet(OrderedDict):
     """
     for var in OrderedDict.__iter__(self):
       OrderedDict.__getitem__(self, var).clearData()
-      self._date = []
 
 
 class NVar(OrderedDict):
@@ -128,35 +198,15 @@ class NVar(OrderedDict):
 
   def __init__(self, name=None):
     self.name = name.lower()
-    self._order = {}
-    self._date_order = {}
+    self._time_of_pos = {}  ## {position: datetime}
+    self._pos_of_time = {}  ## {datetime: position}
     super(NVar, self).__init__()
 
   def __getitem__(self, item):
     if isinstance(item, slice):
       data = []
 
-      if isinstance(item.start, datetime.datetime):
-        start = self._date_order[item.start]
-      else:
-        if item.start is None:
-          start = 0
-        else:
-          if item.start < 0:
-            start = OrderedDict.__len__(self) + item.start
-          else:
-            start = item.start
-      if isinstance(item.stop, datetime.datetime):
-        stop = self._date_order[item.stop]
-      else:
-        if item.stop is None:
-          stop = OrderedDict.__len__(self)
-        else:
-          if item.stop < 0:
-            stop = OrderedDict.__len__(self) + item.stop
-          else:
-            stop = item.stop
-
+      start, stop = self.__sliceToIndex(item)
       for point in range(start, stop):
         data += [self.__getitem__(point)]
 
@@ -164,12 +214,54 @@ class NVar(OrderedDict):
     if isinstance(item, int):
       if item < 0:
         return OrderedDict.__getitem__(self,
-                 self._order[(OrderedDict.__len__(self)) + item])
+                 self._time_of_pos[(OrderedDict.__len__(self)) + item])
       else:
-        return OrderedDict.__getitem__(self, self._order[item])
+        return OrderedDict.__getitem__(self, self._time_of_pos[item])
     else:
       return OrderedDict.__getitem__(self, item)
 
+  def sliceWithTime(self, *args):
+    if len(args) == 1:
+      slc = slice(None, args[0], None)
+    elif len(args) == 2:
+      slc = slice(args[0], args[1], None)
+    else:
+      raise ValueError('sliceWithTime only accepts stop or start, stop arguments')
+
+    data = []
+
+    start, stop = self.__sliceToIndex(slc)
+    for point in range(start, stop):
+      data += [(self.getTimeFromPos(point), self.__getitem__(point))]
+
+    return data
+
+  def __sliceToIndex(self, item):
+    start = stop =  None
+
+    if isinstance(item.start, datetime.datetime):
+      start = self._pos_of_time[item.start]
+    else:
+      if item.start is None:
+        start = 0
+      else:
+        if item.start < 0:
+          start = OrderedDict.__len__(self) + item.start
+        else:
+          start = item.start
+
+    if isinstance(item.stop, datetime.datetime):
+      stop = self._pos_of_time[item.stop]
+    else:
+      if item.stop is None:
+        stop = OrderedDict.__len__(self)
+      else:
+        if item.stop < 0:
+          stop = OrderedDict.__len__(self) + item.stop
+        else:
+          stop = item.stop
+
+    return start, stop
 
   def __add__(self, y):
     data = []
@@ -204,12 +296,15 @@ class NVar(OrderedDict):
       var.addData(data)
       return var
 
-  def getDate(self, index):
+  def getTimeFromPos(self, index):
     """ Returns the date associated with an integer index.  """
     if index < 0:
-      return self._order[(OrderedDict.__len__(self)) + index]
+      return self._time_of_pos[(OrderedDict.__len__(self)) + index]
     else:
-      return self._order[index]
+      return self._time_of_pos[index]
+
+  def getPosFromTime(self, tm):
+    return self._pos_of_time[tm]
 
   def addData(self, data=[]):
     """
@@ -219,9 +314,6 @@ class NVar(OrderedDict):
     if len(data) == 0:
       return
 
-    self.__mergeData(data)
-
-  def __mergeData(self, data):
     try:
       if not isinstance(data[0][0], datetime.datetime):
         raise ValueError
@@ -234,8 +326,8 @@ class NVar(OrderedDict):
       raise ValueError('NVar: Data must be formatted as [(datetime, value), ...]')
 
     for row in data:
-      self._order[OrderedDict.__len__(self)] = row[0]
-      self._date_order[row[0]] = OrderedDict.__len__(self)
+      self._time_of_pos[OrderedDict.__len__(self)] = row[0]
+      self._pos_of_time[row[0]] = OrderedDict.__len__(self)
       OrderedDict.__setitem__(self, row[0], row[1])
 
   def clearData(self):
@@ -243,7 +335,8 @@ class NVar(OrderedDict):
     Removes all data from variable, keeps variable name.
     """
     OrderedDict.clear(self)
-    self._order = {}
+    self._time_of_pos = {}
+    self._pos_of_time = {}
 
 
 ## --------------------------------------------------------------------------
@@ -256,15 +349,28 @@ if __name__ == "__main__":
   """
   import sys
 
+  print "Creating NVarSet from file %s." % sys.argv[1]
   olist = createOrderedListFromFile(sys.argv[1])
   print "Printing NVarSet:\n%s" % olist
-  print "Printing NvarSet[-1:]:\n%s" % olist.data[-1:]
-  if olist.data[:] == olist.data:
-    print "NVarSet[:] the same as olist.data"
-  tasx = olist['tasx']
-  print tasx[:]
-  print tasx[datetime.datetime(2011,8,11,13,14,6)]
+  print "Printing NVarSet.sliceWithTime[-2:]:\n%s" % olist.sliceWithTime(-2, None)
+
+  print "Printing NVarSet[-2:]:\n%s" % olist[-2:]
+
+  if olist[-1:][0] == olist[-1]:
+    print "NVarSet[-1:][0] is equal to NVarSet[-1]"
+  else:
+    print "NVarSet[-1:][0] is NOT equal to NVarSet[-1]"
+    print olist[-1:][0]
+    print olist[-1]
+
+  print "Getting variable from NVarSet.getNVar(var)"
+  tasx = olist.getNVar('tasx')
+  print "Printing variable:\n%s" % tasx
+  print "variable[:]:\n%s" % tasx[:]
+  print "variable[:] with date:\n%s" % tasx.sliceWithTime(None, 2)
+  print "variable[datetime.datetime]:\n%s" % tasx[datetime.datetime(2011,8,11,13,14,6)]
   print tasx[-1]
+  print tasx[-1:]
   print tasx[datetime.datetime(2011, 8, 11, 13, 14, 6):]
 
   ggalt = NVar('ggalt')
@@ -273,3 +379,5 @@ if __name__ == "__main__":
   ggalt_2 += [(datetime.datetime(2011,8,11,13,14,6),0.2)]
   ggalt_3 = ggalt + ggalt_2
   print ggalt_3[:]
+
+  NVarSet((ggalt,))
