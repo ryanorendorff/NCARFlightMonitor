@@ -101,8 +101,7 @@ class NVarSet(OrderedDict):
 
       return data
 
-    if isinstance(item, int):
-      ## item < 0 taken care of in NVar
+    else:
       return self.__getLine(pos=item, add_time=False)
 
 
@@ -362,6 +361,13 @@ if __name__ == "__main__":
     print "NVarSet[-1:][0] is NOT equal to NVarSet[-1]"
     print olist[-1:][0]
     print olist[-1]
+
+  if olist[-1] == olist[datetime.datetime(2011,8,11,13,14,11)]:
+    print "olist[int] and olist[datetime.datetime] are equal"
+  else:
+    print "olist[int] and olist[datetime.datetime] are NOT equal"
+    print olist[-1]
+    print olist[datetime.datetime(2011,8,11,13,14,11)]
 
   print "Getting variable from NVarSet.getNVar(var)"
   tasx = olist.getNVar('tasx')
