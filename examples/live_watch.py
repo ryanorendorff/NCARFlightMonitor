@@ -86,8 +86,8 @@ if __name__ == "__main__":
   ## Functions used to determine if fo3_acd is out of range
   def setup_fo3(self, *extra, **kwds):
     self.cal = False
-    self.fo3_acd = self.variables[0]
-    self.psfdc = self.variables[1]
+    self.fo3_acd = self.variables.getNVar('fo3_acd')
+    self.psfdc = self.variables.getNVar('psfdc')
 
   def process_fo3(self):
     if 0 <= self.fo3_acd[-1] <= 0.09 and self.psfdc[-1]*0.75006 < 745 \
@@ -100,14 +100,14 @@ if __name__ == "__main__":
   ## Functions used to determine if coraw_al is out of range
   def setup_co(self, *extra, **kwds):
     self.cal = False
-    self.coraw_al = self.variables[0]
 
-  def process_co(self):
-    if self.coraw_al[-1] <= 8000 and self.cal == False:
-      self.pnt( "[%s] CO cal occuring." %\
-                (str(self.coraw_al.getDate(-1)) + "Z"))
+  def process_co(self, tm, data):
+    coraw_al = data[0]
+
+    if coraw_al <= 8000 and self.cal == False:
+      self.pnt("[%s%s] CO cal occuring." % (str(tm), "Z"))
       self.cal = True
-    elif self.coraw_al[-1] > 8000 and self.cal == True:
+    elif coraw_al > 8000 and self.cal == True:
       self.cal = False
 
 

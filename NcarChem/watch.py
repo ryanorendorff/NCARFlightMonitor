@@ -167,7 +167,7 @@ class watcher(object):
         try:
           out_file = NRTFile()
           labels = self._variables.labels
-          data = self._variables.data
+          data = self._variables.sliceWithTime(None, None)
           if self._header == False:
             out_file.write(file_name=out_file_name,
                            labels=labels,
@@ -204,13 +204,13 @@ class watcher(object):
         self.pnt("[%s] In Flight." % self._server.getTimeStr())
         self._flight_start_time = self._server.getTime()
         self._flight_end_time = None
-        self.resetAlgos()
         self._flying_now = True
         self._waiting = False
         self._variables.clearData()
         ##  Get preflight data
         self._variables.addData(self._server.getData(start_time="-60 MINUTE",
                                          variables=self._variables.keys()))
+        self.resetAlgos()
         self._updater = NDatabaseLiveUpdater(server=self._server,
                                              variables=self._variables)
 
@@ -221,7 +221,7 @@ class watcher(object):
         try:
           algo.run()
         except Exception, e:
-          print "%s: Could not run algorithm." % self.__class__.__name__
+          print "%s: Could not run algorithm; used variables %s." % (self.__class__.__name__, algo.variables)
           self._algos.remove(algo)
           print e
 
@@ -268,6 +268,9 @@ class watcher(object):
                     start_fn=boundsCheckSetup,
                     process_fn=boundsCheck)
 
+  def badDataCheck(self):
+    pass
+
   def attachAlgo(self, variables=None,
                        start_fn=None, process_fn=None,
                        *extra, **kwds):
@@ -285,10 +288,13 @@ class watcher(object):
 
     ## Force load NVars into instantiated scope, by object (are updated when
     ## updater.update is called
-    algo.variables = []
     algo.pnt = self.pnt  ## Allows message redirection.
+
+    var_list = []
     for var in variables:
-      algo.variables += [self._variables[var]]
+      var_list.append(self._variables.getNVar(var))
+
+    algo.variables = NVarSet(var_list)
 
     self._algos += [algo]  ## Must be in [] to add to list
 
@@ -301,51 +307,3 @@ class watcher(object):
     for algo in self._algos:
       algo.reset()
       algo.flight_start_time = self._flight_start_time
-
-## --------------------------------------------------------------------------
-## Start command line interface (main)
-## --------------------------------------------------------------------------
-
-if __name__ == "__main__":
-  """
-  Example of how to use the watcher class.
-  """
-  ## Get command line arguments
-  import sys
-
-  def setup(self, *extra, **kwds):
-    """
-    Setup for fo3_acd cal checking.
-    """
-    self.cal = False   ## Used to prevent message print spam.
-    self.fo3_acd = self.variables[0]
-    self.psfdc = self.variables[1]
-
-  def process(self):
-    """
-    What gets run every time new data is acquired.
-    """
-    ## Only cals when psfdc (pressure) is below 745 torr.
-    if 0 <= self.fo3_acd[-1] <= 0.09 \
-        and self.psfdc[-1]*0.75006 < 745 \
-        and self.cal == False:
-      print "[%s] fO3 cal occuring." % (str(self.fo3_acd.getDate(-1)) + "Z")
-      self.cal = True
-    elif self.fo3_acd[-1] > 0.09 and self.cal == True:
-      self.cal = False
-
-  ## Attach to a local database, will be filled with an example file.
-  watch_server = watcher(database="C130",
-                         host="127.0.0.1",
-                         user="postgres",
-                         simulate_start_time=
-                           datetime.datetime(2011, 7, 28, 14, 0, 0),
-                         simulate_file=sys.argv[1],
-                         variables=('psfdc', 'fo3_acd', 'co2_pic', 'ch4_pic'))
-
-  watch_server.attachBoundsCheck('co2_pic', 350, 500)
-  watch_server.attachBoundsCheck('ch4_pic', 1.7, 1.9)
-  watch_server.attachAlgo(variables=('fo3_acd', 'psfdc'),
-                          start_fn=setup, process_fn=process)
-  ## Will go indefinitely, end with CTRL-C
-  watch_server.startWatching()

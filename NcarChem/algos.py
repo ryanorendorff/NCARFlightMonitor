@@ -29,29 +29,39 @@ class NAlgorithm(object):
   """
   def __init__(self):
     self.error = False  ## Used for error checking, caling, etc
-    self.last_date = datetime.datetime(1970, 1, 1, 0, 0, 0)
-    self.variables = []  ## NVar type
+    self.last_date = None
+    self.variables = None
     self.updated = False
+    self.new_data = None
     self._flight_start_time = None
 
 
     self.setup = lambda : None
     self.process = lambda : None
 
-  ## algo._flight_start_time is a shallow copy!
   @property
   def flight_start_time(self):
     return self._flight_start_time
 
+  ## algo._flight_start_time is a shallow copy!
   @flight_start_time.setter
   def flight_start_time(self, value):
     self._flight_start_time = value
 
   def run(self):
-    new_date = self.variables[0].getDate(-1)
+    new_date = self._time.getTimeFromPos(-1)
     if new_date > self.last_date:
       self.updated = True
-      self.process()
+
+      new_data = self.variables.sliceWithTime(self.last_date, None)[1:]
+      for point in new_data:
+        tm = point[0]
+        update = point[1:]
+        try:
+          self.process(tm, update)
+        except Exception, e:
+          raise e
+
       self.last_date = new_date
     else:
       self.updated = False
@@ -59,6 +69,8 @@ class NAlgorithm(object):
   def reset(self):
     try:
       self.setup()
+      self._time = self.variables.getNVar(self.variables.keys()[0])
+      self.last_date = self._time.getTimeFromPos(-1)
     except Exception, e:
       print "Could not rerun setup command."
       print e
