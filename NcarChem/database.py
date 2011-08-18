@@ -156,7 +156,7 @@ class NDatabase(object):
     self._sql_bad_attempts = 0
 
     ## Time (which can be spoofed with the simulate parameters
-    self._start_time = datetime.datetime.now()
+    self._start_time = datetime.datetime.utcnow()
     self._current_time = (simulate_start_time if simulate_start_time is not None
                           else self._start_time)
 
@@ -298,11 +298,11 @@ class NDatabase(object):
     in simulation mode.
     """
     if self._simulate_fast:
-      return ((self._current_time - self._simulate_start_time) \
-             + self._simulate_start_time).replace(microsecond=0)
+      return (((self._current_time - self._simulate_start_time)
+             + self._simulate_start_time).replace(microsecond=0))
     else:
-      return ((datetime.datetime.now() - self._start_time) \
-             + self._simulate_start_time).replace(microsecond=0)
+      return (((datetime.datetime.utcnow() - self._start_time)
+             + self._current_time).replace(microsecond=0))
 
   def getData(self, variables=None,
                     start_time=None, end_time=None,

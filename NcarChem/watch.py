@@ -66,7 +66,7 @@ class watcher(object):
   def __init__(self, database=None,
                      host="eol-rt-data.guest.ucar.edu",
                      user="ads",
-                     simulate_start_time=False,
+                     simulate_start_time=None,
                      simulate_file=None,
                      header=False,
                      email_fn = None,
