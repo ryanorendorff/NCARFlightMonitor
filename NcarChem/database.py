@@ -33,9 +33,35 @@ import random
 ## Used for sys.stderr
 import sys
 
+## Unload server at program exit.
+import atexit
+
 ## --------------------------------------------------------------------------
 ## Functions
 ## --------------------------------------------------------------------------
+def __ending__(server):
+  try:
+    server._conn.close()
+  except:
+    pass
+
+  if server._simulate_start_db is not None and server._running is True:
+    try:
+      ## Load library back in before finally taking stuff down
+      conn = psycopg2.connect(database=server._simulate_start_db, \
+                              user=server._user, \
+                              host=server._host, \
+                              password=server._password)
+      conn.set_isolation_level(0)
+      cursor = conn.cursor()
+      cursor.execute("DROP DATABASE %s;" % server._database)
+      cursor.close()
+      conn.close()
+    except Exception, e:
+      ## Did not work, but don't change error exit code
+      print "%s: Could not load simulated db" % server.__class__.__name__
+
+  server._running = False
 
 def _loadFile(file_path, dbname, host, user, password, dbstart):
   """
@@ -206,35 +232,26 @@ class NDatabase(object):
 
     ## We are done
     cursor.close()
+    atexit.register(__ending__, self)
+
 
   def __del__(self):
     try:
       self._conn.close()
     except Exception, e:
       pass
-    if self._simulate_start_db is not None and self._running is True:
-      try:
-        ## Load library back in before finally taking stuff down
-        import psycopg2
-        conn = psycopg2.connect(database=self._simulate_start_db, \
-                                user=self._user, \
-                                host=self._host, \
-                                password=self._password)
-        conn.set_isolation_level(0)
-        cursor = conn.cursor()
-        cursor.execute("DROP DATABASE %s;" % self._database)
-        cursor.close()
-        conn.close()
-      except Exception, e:
-        ## Did not work, but don't change error exit code
-        print "%s: Could not load simulated db" % self.__class__.__name__
+
 
   def stop(self):
     """
     Stop running the server. Use if in an infinite loop.
     """
-    self.__del__()
+    try:
+      self._conn.close()
+    except Exception, e:
+      pass
     self._running = False
+
 
   def reconnect(self):
     """
@@ -279,7 +296,7 @@ class NDatabase(object):
 
   def getTimeStr(self):
     """ Returns the most recent datapoint time with a Z for Zulu time.  """
-    return str(self._getSimulatedCurrentTime()) + "Z"
+    return str(self._getSimulatedCurrentTime())
 
   def getTime(self):
     """ Returns latest datapoint time as datetime object """
