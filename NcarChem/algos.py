@@ -54,7 +54,7 @@ class NAlgorithm(object):
 
       new_data = self.variables.sliceWithTime(self.last_date, None)[1:]
       for point in new_data:
-        tm = "".join([str(point[0]), 'Z'])
+        tm = point[0]
         update = point[1:]
         try:
           self.process(tm, update)

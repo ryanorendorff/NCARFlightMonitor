@@ -126,12 +126,12 @@ class watcher(object):
     self._badDataCheck(self._variables.keys())
 
   ## TODO: Determine if a queue is better
-  def pnt(self, msg):
+  def pnt(self, msg, tm):
     """
     A print method that allows a msg to be easily redirected. This can be
     overwritten externally, see examples/bot.py.
     """
-    print msg
+    print "[%sZ] %s" % (tm, msg)
 
   def startWatching(self):
     """ Runs run() all the time, operates in a 'daemon' mode """
@@ -157,13 +157,13 @@ class watcher(object):
       if self._flying_now == False:  ## No flight in progress.
         self._server.reconnect()  ## Done to ensure good connection.
         if self._waiting is False:
-          print "[%s] Waiting for flight." % self._server.getTimeStr()
+          print "[%sZ] Waiting for flight." % self._server.getTimeStr()
           self._waiting = True
         self._server.sleep(5 * 60)  ## Look for another flight in 5 minutes.
 
       ## Just switched from flying to not flying.
       else:
-        self.pnt("[%s] Flight ending." % self._server.getTimeStr())
+        self.pnt("Flight ending.", self._server.getTimeStr())
         self._server.sleep(2 * 60) ## Get more data after landing
         self._updater.update() ## Get last bit of data.
 
@@ -171,7 +171,7 @@ class watcher(object):
           out_file_name = output_file_str(self._server.getFlightInformation())
         else:
           out_file_name = self._output_file_path
-        print ("[%s] Outputting file to %s" %
+        print ("[%sZ] Outputting file to %s" %
                (self._server.getTimeStr(), out_file_name))
         try:
           out_file = NRTFile()
@@ -211,7 +211,7 @@ class watcher(object):
     ## Flight is in progress
     else:
       if self._flying_now == False:  ## Just started flying
-        self.pnt("[%s] In Flight." % self._server.getTimeStr())
+        self.pnt("In Flight.", self._server.getTimeStr())
         self._flight_start_time = self._server.getTime()
         self._flight_end_time = None
         self._flying_now = True
@@ -261,14 +261,12 @@ class watcher(object):
       ## If out of range and was not so before
       if not(self.lower_bound <= val <= self.upper_bound) \
          and self.error == False:
-        self.pnt("[%s] %s out of bounds." % \
-                  (tm, self.name))
+        self.pnt("%s out of bounds." % self.name, tm)
         self.error = True
       ## If in range after being out of range
       elif self.lower_bound <= val <= self.upper_bound \
            and self.error == True:
-        self.pnt("[%s] %s back in bounds." % \
-                   (tm, self.name))
+        self.pnt("%s back in bounds." % self.name, tm)
         self.error=False
 
     ## Attach method to object of NAlgorithm
@@ -291,10 +289,10 @@ class watcher(object):
 
     def process_bad(self, tm, data):
       if data[0] == bad_flag and self.error == False:
-        self.pnt('[%s] %s MISSING DATA' % (tm, self.name))
+        self.pnt('%s MISSING DATA' % self.name, tm)
         self.error = True
       elif data[0] != bad_flag and self.error == True:
-        self.pnt('[%s] %s no longer has missing data' % (tm, self.name))
+        self.pnt('%s no longer has missing data' % self.name, tm)
         self.error = False
 
     self.attachAlgo(variables=[variable_name],
