@@ -192,6 +192,8 @@ class NDatabase(object):
     self._simulate_fast = (simulate_fast if simulate_start_time is not None else
                            False)
 
+    self._flying = False
+
     ## Error Checking
     if database is None:
       raise ValueError('Database must be specified')
@@ -276,8 +278,17 @@ class NDatabase(object):
     if len(data) != 0:
       speed = data[0][1]
     if speed > 50:
+      if self._flying == False:
+        cursor = self._conn.cursor()
+        try:
+          cursor.execute("SELECT * FROM global_attributes;")
+          self._flight_info = dict(cursor.fetchall())
+        except Exception:
+          print "Could not update flight information variable."
+        self._flying = True
       return True
     else:
+      self._flying = False
       return False
 
   def sleep(self, sleep_time=0):
