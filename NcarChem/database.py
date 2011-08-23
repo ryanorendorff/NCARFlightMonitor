@@ -33,6 +33,8 @@ import random
 ## Used for sys.stderr
 import sys
 
+import math
+
 ## Unload server at program exit.
 import atexit
 
@@ -177,6 +179,7 @@ class NDatabase(object):
     self._host = host
     self.variable_list = ()
     self._flight_info = None
+    self._bad_data_values = None
     self._conn = None
     self._running = True
     self._sql_bad_attempts = 0
@@ -224,6 +227,8 @@ class NDatabase(object):
       variable_list.remove(('datetime',))
     except ValueError:
       pass
+
+    self._bad_data_values = self.getBadDataValues()
 
     ## Variable list is a list of single entry tuples, make into tuple
     self.variable_list = tuple([ col[0] for col in variable_list])
@@ -277,6 +282,12 @@ class NDatabase(object):
     data = (self.getData(number_entries=1, variables=('tasx',)))
     if len(data) != 0:
       speed = data[0][1]
+    else:
+      return self._flying
+
+    if speed == self._bad_data_values['TASX']:
+      speed = self._gps_speed()
+
     if speed > 50:
       if self._flying == False:
         cursor = self._conn.cursor()
@@ -290,6 +301,32 @@ class NDatabase(object):
     else:
       self._flying = False
       return False
+
+  def _gps_speed(self):
+    data = (self.getData(number_entries=2, variables=('gglat','gglon')))
+
+    if len(data) == 0:
+      return self._bad_data_values['TASX']
+
+    lat1 = math.radians(data[0][1])
+    lat2 = math.radians(data[1][1])
+    lon1 = math.radians(data[0][2])
+    lon2 = math.radians(data[1][2])
+
+    cos = math.cos
+    sin = math.sin
+    atan2 = math.atan2
+    sqrt = math.sqrt
+
+    ## Radius of the Earth
+    R = 6371
+    dLon = lon2 - lon1
+    tm = (data[0][0] - data[1][0]).total_seconds()
+
+    d = (atan2(sqrt((cos(lat2)*sin(dLon))**2 + (cos(lat1)*sin(lat2) - sin(lat1)*cos(lat2)*cos(dLon))**2),
+                   sin(lat1)*sin(lat2) + cos(lat1)*cos(lat2)*cos(dLon)) * R)
+
+    return d*1000/tm
 
   def sleep(self, sleep_time=0):
     """

@@ -159,7 +159,7 @@ class watcher(object):
         if self._waiting is False:
           print "[%sZ] Waiting for flight." % self._server.getTimeStr()
           self._waiting = True
-        self._server.sleep(5 * 60)  ## Look for another flight in 5 minutes.
+        self._server.sleep(3)  ## Look for another flight in 5 minutes.
 
       ## Just switched from flying to not flying.
       else:
