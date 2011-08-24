@@ -23,19 +23,19 @@ def process_co(self, tm, data):
     pass
   elif ((tm - self.last_cal_time) >= self.time_interval_upper
        and self.time_late_flag == False):
-    self.pnt("CO cal is late.", tm)
+    self.log.print_msg("CO cal is late.", tm)
     self.time_late_flag = True
   elif ((tm - self.last_cal_time) < self.time_interval_upper
        and self.time_late_flag == True):
     self.time_late_flag = False
 
   if coraw_al <= 8000 and self.cal == False:
-    self.pnt("CO cal occuring.", tm)
+    self.log.print_msg("CO cal occuring.", tm)
 
     if self.last_cal_time is None:
       pass
     elif (tm - self.last_cal_time) < self.time_interval_lower:
-      self.pnt("CO cal is early.", tm)
+      self.log.print_msg("CO cal is early.", tm)
 
     self.last_cal_time = tm
     self.cal = True
@@ -89,7 +89,7 @@ def process_follow(self, tm, data):
   self.last_co_qlive = co_qlive
 
   if (tm - self.time_update) >= self.time_interval:
-    self.pnt("coraw_al/co_qlive follow: %d" % self.follow_percent, tm)
+    self.log.print_msg("coraw_al/co_qlive follow: %d" % self.follow_percent, tm)
     self.time_update = tm
 
 
@@ -98,13 +98,13 @@ def process_follow(self, tm, data):
 ## to send emails. This was done because there is no cross platform, cross
 ## mail server implementation that works to send emails except an SMTP server,
 ## which many users do not have running on their personal machines.
-def sendMail(flight_info=None, files=None):
+def sendMail(flight_info=None, files=None, body_msg=None):
   """
   Mail function copied from Stack Overflow. Uses gmail account for SMTP server.
   """
   pw = open(".pass", 'r').read().split("\n")
   fro = pw[0]
-  to = ("ryano@ucar.edu", "ryan@rdodesigns.com")
+  to = ["ryano@ucar.edu"]
   project_name = flight_info['ProjectName']
   flight_number = flight_info['FlightNumber']
 
@@ -114,7 +114,10 @@ def sendMail(flight_info=None, files=None):
   msg['Date'] = formatdate(localtime=True)
   msg['Subject'] = "Data from flight %s_%s" % (project_name, flight_number)
 
-  body = ("Data from flight %s of project %s attached." %
+  if body_msg is not None:
+    body = body_msg
+  else:
+    body = ("Data from flight %s of project %s attached." %
           (flight_number, project_name))
   msg.attach(MIMEText(body))
 

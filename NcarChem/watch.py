@@ -55,6 +55,34 @@ def output_file_str(flight_info):
 ## --------------------------------------------------------------------------
 ## Classes
 ## --------------------------------------------------------------------------
+class logger(object):
+  def __init__(self, print_msg_fn=None):
+    self.messages = []
+    if print_msg_fn is None:
+      self.print_msg_fn = self.print_default
+    else:
+      self.print_msg_fn = print_msg_fn
+
+  def reset(self):
+    self.messages = []
+
+  def print_msg(self, msg, tm):
+    self.messages += [self.print_msg_fn(msg,tm)]
+
+
+  def print_default(self, msg, tm):
+    """
+    A print method that allows a msg to be easily redirected. This can be
+    overwritten externally, see examples/bot.py.
+    """
+    if tm is not None:
+      formatted_msg = "[%sZ] %s" % (tm, message)
+    else:
+      formatted_msg = message
+
+    print formatted_msg
+    return formatted_msg
+
 class watcher(object):
   """
   A class designed to watch a server to see when an aircraft is in flight.
@@ -70,6 +98,7 @@ class watcher(object):
                      simulate_file=None,
                      header=False,
                      email_fn = None,
+                     print_msg_fn = None,
                      output_file_path=None,
                      variables=None,
                      *extra,
@@ -118,6 +147,11 @@ class watcher(object):
 
     self._updater = None  ## Interfaces with server to get regular updates.
 
+    if print_msg_fn is None:
+      self.log = logger(None)
+    else:
+      self.log = logger(print_msg_fn)
+
     if variables is None:
       self._variables = NVarSet(self._server.variable_list)
     else:
@@ -125,13 +159,7 @@ class watcher(object):
 
     self._badDataCheck(self._variables.keys())
 
-  ## TODO: Determine if a queue is better
-  def pnt(self, msg, tm):
-    """
-    A print method that allows a msg to be easily redirected. This can be
-    overwritten externally, see examples/bot.py.
-    """
-    print "[%sZ] %s" % (tm, msg)
+
 
   def startWatching(self):
     """ Runs run() all the time, operates in a 'daemon' mode """
@@ -163,7 +191,7 @@ class watcher(object):
 
       ## Just switched from flying to not flying.
       else:
-        self.pnt("Flight ending.", self._server.getTimeStr())
+        self.log.print_msg("Flight ending.", self._server.getTimeStr())
         self._server.sleep(2 * 60) ## Get more data after landing
         self._updater.update() ## Get last bit of data.
 
@@ -196,7 +224,11 @@ class watcher(object):
 
           ## TODO: Change email subject to project name and flight number
           if self._email is not None:
-            self._email(self._server.getFlightInformation(), [out_file_name])
+            if self.log.messages != []:
+              body_msg = "\n".join(self.log.messages)
+            else:
+              body_msg = "Data attached"
+            self._email(self._server.getFlightInformation(), [out_file_name], body_msg)
 
             print "[%s] Sent mail." % self._server.getTimeStr()
         except Exception, e:
@@ -207,11 +239,12 @@ class watcher(object):
         self._flight_end_time = self._server.getTime()
         self._num_flight += 1
         self._variables.clearData()
+        self.log.reset()
 
     ## Flight is in progress
     else:
       if self._flying_now == False:  ## Just started flying
-        self.pnt("In Flight.", self._server.getTimeStr())
+        self.log.print_msg("In Flight.", self._server.getTimeStr())
         self._flight_start_time = self._server.getTime()
         self._flight_end_time = None
         self._flying_now = True
@@ -240,7 +273,7 @@ class watcher(object):
                               upper_bound=32767):
 
     """
-    Checks to see if a variable is within bounds. If not it calls pnt() to
+    Checks to see if a variable is within bounds. If not it calls log.print() to
     print a message to the user.
     """
     def boundsCheckSetup(self, *args, **kwds):
@@ -261,12 +294,12 @@ class watcher(object):
       ## If out of range and was not so before
       if not(self.lower_bound <= val <= self.upper_bound) \
          and self.error == False:
-        self.pnt("%s out of bounds." % self.name, tm)
+        self.log.print_msg("%s out of bounds." % self.name, tm)
         self.error = True
       ## If in range after being out of range
       elif self.lower_bound <= val <= self.upper_bound \
            and self.error == True:
-        self.pnt("%s back in bounds." % self.name, tm)
+        self.log.print_msg("%s back in bounds." % self.name, tm)
         self.error=False
 
     ## Attach method to object of NAlgorithm
@@ -289,10 +322,10 @@ class watcher(object):
 
     def process_bad(self, tm, data):
       if data[0] == bad_flag and self.error == False:
-        self.pnt('%s MISSING DATA' % self.name, tm)
+        self.log.print_msg('%s MISSING DATA' % self.name, tm)
         self.error = True
       elif data[0] != bad_flag and self.error == True:
-        self.pnt('%s no longer has missing data' % self.name, tm)
+        self.log.print_msg('%s no longer has missing data' % self.name, tm)
         self.error = False
 
     self.attachAlgo(variables=[variable_name],
@@ -316,7 +349,7 @@ class watcher(object):
 
     ## Force load NVars into instantiated scope, by object (are updated when
     ## updater.update is called
-    algo.pnt = self.pnt  ## Allows message redirection.
+    algo.log = self.log  ## Allows message redirection.
 
     var_list = []
     for var in variables:
