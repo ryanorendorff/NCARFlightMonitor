@@ -11,7 +11,7 @@ from email import Encoders
 
 def setup_co(self, *args, **kwds):
   self.cal = False
-  self.last_cal_time = None
+  self.last_cal_time = self.flight_start_time
   self.time_interval_lower = datetime.timedelta(seconds=3300)
   self.time_interval_upper = datetime.timedelta(seconds=3900)
   self.time_late_flag = False
@@ -19,9 +19,7 @@ def setup_co(self, *args, **kwds):
 def process_co(self, tm, data):
   coraw_al = data[0]
 
-  if self.last_cal_time is None:
-    pass
-  elif ((tm - self.last_cal_time) >= self.time_interval_upper
+  if ((tm - self.last_cal_time) >= self.time_interval_upper
        and self.time_late_flag == False):
     self.log.print_msg("CO cal is late.", tm)
     self.time_late_flag = True
@@ -32,9 +30,7 @@ def process_co(self, tm, data):
   if coraw_al <= 8000 and self.cal == False:
     self.log.print_msg("CO cal occuring.", tm)
 
-    if self.last_cal_time is None:
-      pass
-    elif (tm - self.last_cal_time) < self.time_interval_lower:
+    if (tm - self.last_cal_time) < self.time_interval_lower:
       self.log.print_msg("CO cal is early.", tm)
 
     self.last_cal_time = tm

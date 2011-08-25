@@ -76,9 +76,9 @@ class logger(object):
     overwritten externally, see examples/bot.py.
     """
     if tm is not None:
-      formatted_msg = "[%sZ] %s" % (tm, message)
+      formatted_msg = "[%sZ] %s" % (tm, msg)
     else:
-      formatted_msg = message
+      formatted_msg = msg
 
     print formatted_msg
     return formatted_msg
@@ -366,5 +366,5 @@ class watcher(object):
   def resetAlgos(self):
     """ Return to setup state. """
     for algo in self._algos:
-      algo.reset()
       algo.flight_start_time = self._flight_start_time
+      algo.reset()
