@@ -111,6 +111,40 @@ def _loadFile(file_path, dbname, host, user, password, dbstart):
   cursor.close()
   conn.close()
 
+def _loadVariables(file_path, dbname, host, user="postgres", password=""):
+  """
+  Loads a .asc file with a header into a sql database for testing.
+  """
+  nfile = datafile.NRTFile(file_path)
+
+  labels = nfile.labels
+  data = nfile.data
+
+  ## Join the new database
+  print "Database: %s" % dbname
+  print "User: %s" % user
+  print "Host: %s" % host
+  print "Password: %s" % password
+  conn = psycopg2.connect(database=dbname, \
+                          user=user, \
+                          host=host, \
+                          password=password)
+
+  cursor = conn.cursor()
+
+  VARS = ",".join(labels).lower()
+  ## Add data into test dataabase
+  INSERT_CMD = "INSERT INTO raf_lrt (" + VARS.rstrip(', ') + ") VALUES (%s);"
+  for row in data:
+    data_piece = ""
+    for item in row:
+      data_piece += "'%s'," % str(item)
+    cursor.execute(INSERT_CMD % data_piece.rstrip(', '))
+
+  ## Close all connections to the database, will be picked up later.
+  cursor.close()
+  conn.close()
+
 ## --------------------------------------------------------------------------
 ## Classes
 ## --------------------------------------------------------------------------
@@ -287,6 +321,9 @@ class NDatabase(object):
 
     if speed == self._bad_data_values['TASX']:
       speed = self._gps_speed()
+
+    if speed == self._bad_data_values['TASX']:
+      return self._flying
 
     if speed > 50:
       if self._flying == False:
