@@ -125,6 +125,7 @@ class watcher(object):
     self._flight_end_time = None
     self._num_flight = 0
     self._waiting = False
+    self.__wait = 1
 
     if self._simulate_file is not None:
       self._server = NDatabase(database=self._database,
@@ -153,8 +154,14 @@ class watcher(object):
       self.log = logger(print_msg_fn)
 
     if variables is None:
+      self.__input_variables = self._server.variable_list
       self._variables = NVarSet(self._server.variable_list)
     else:
+      self.__input_variables = variables
+      ## Remove dud variables
+      variables = [var for var in variables if (var in self._server.variable_list)]
+      if len(variables) != self.__input_variables:
+        print "The following variables do not exist: %s" % [var for var in self.__input_variables if var not in variables]
       self._variables = NVarSet(variables)
 
     self._badDataCheck(self._variables.keys())
@@ -166,10 +173,12 @@ class watcher(object):
     while(True):
       self.run()
 
-  def runOnce(self):
-    """ Run for only one flight.  """
-    while self._num_flight == 0:
+  def runNumFlights(self, number_flights):
+    while self._num_flight < number_flights:
       self.run()
+
+  def _speed_wait(self, multiple):
+    self.__wait *= multiple
 
 
   def run(self):
@@ -187,7 +196,7 @@ class watcher(object):
         if self._waiting is False:
           print "[%sZ] Waiting for flight." % self._server.getTimeStr()
           self._waiting = True
-        self._server.sleep(3)  ## Look for another flight in 5 minutes.
+        self._server.sleep(3*self.__wait)
 
       ## Just switched from flying to not flying.
       else:
