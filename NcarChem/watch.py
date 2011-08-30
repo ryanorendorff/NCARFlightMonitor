@@ -121,6 +121,10 @@ class watcher(object):
     self._algos = []
     self.__input_algos = []
 
+    self.__print_msg_fn = print_msg_fn
+
+    self._variables = None
+
     self._flying_now = False
     self._flight_start_time = None
     self._flight_end_time = None
@@ -149,25 +153,14 @@ class watcher(object):
 
     self._updater = None  ## Interfaces with server to get regular updates.
 
-    if print_msg_fn is None:
-      self.log = logger(None)
-    else:
-      self.log = logger(print_msg_fn)
 
     if variables is None:
       self.__input_variables = self._server.variable_list
-      self._variables = NVarSet(self._server.variable_list)
+      #self._variables = NVarSet(self._server.variable_list)
     else:
       self.__input_variables = variables
-      ## Remove dud variables
-      variables = [var for var in variables if (var in self._server.variable_list)]
-      if len(variables) != self.__input_variables:
-        print "The following variables do not exist: %s" % [var for var in self.__input_variables if var not in variables]
-      self._variables = NVarSet(variables)
 
-    self._badDataCheck(self._variables.keys())
-
-
+    self._badDataCheck(self.__input_variables)
 
   def startWatching(self):
     """ Runs run() all the time, operates in a 'daemon' mode """
@@ -178,7 +171,7 @@ class watcher(object):
     while self._num_flight < number_flights:
       self.run()
 
-  def _speed_wait(self, multiple):
+  def _speedWait(self, multiple):
     self.__wait *= multiple
 
 
@@ -204,58 +197,13 @@ class watcher(object):
         self.log.print_msg("Flight ending.", self._server.getTimeStr())
         self._server.sleep(2 * 60) ## Get more data after landing
         self._updater.update() ## Get last bit of data.
-
-        if self._output_file_path is None:
-          out_file_name = output_file_str(self._server.getFlightInformation())
-        else:
-          out_file_name = self._output_file_path
-        print ("[%sZ] Outputting file to %s" %
-               (self._server.getTimeStr(), out_file_name))
-        try:
-          out_file = NRTFile()
-          labels = self._variables.labels
-          data = self._variables.sliceWithTime(None, None)
-          if self._header == False:
-            out_file.write(file_name=out_file_name,
-                           labels=labels,
-                           data=data)
-          else:
-            out_file.write(file_name=out_file_name,
-                           header=self._server.getDatabaseStructure(),
-                           labels=labels,
-                           data=data)
-
-        except Exception, e:
-          print "%s: Could not create data file" % self.__class__.__name__
-          print e
-
-        try:
-          mail_time = self._server.getTimeStr()
-
-          ## TODO: Change email subject to project name and flight number
-          if self._email is not None:
-            if self.log.messages != []:
-              body_msg = "\n".join(self.log.messages)
-            else:
-              body_msg = "Data attached"
-            self._email(self._server.getFlightInformation(), [out_file_name], body_msg)
-
-            print "[%s] Sent mail." % self._server.getTimeStr()
-        except Exception, e:
-          print "%s: Could not send mail" % self.__class__.__name__
-          print e
-
-        self._flying_now = False
-        self._flight_end_time = self._server.getTime()
-        self._num_flight += 1
-        self._variables.clearData()
-        self.log.reset()
+        self._flightEnding()
 
     ## Flight is in progress
     else:
       if self._flying_now == False:  ## Just started flying
+        self._flightStarting()
         self.log.print_msg("In Flight.", self._server.getTimeStr())
-        self._reset()
 
       self._updater.update()  ## Can return none, sleeps for at least DataRate
                               ## seconds (three seconds by default).
@@ -265,8 +213,125 @@ class watcher(object):
           algo.run()
         except Exception, e:
           print "%s: Could not run algorithm; used variables %s." % (self.__class__.__name__, algo.variables)
+          print "Algorithm Description: %s" % algo.desc
           self._algos.remove(algo)
           print e
+
+  def _flightStarting(self):
+    self._flight_start_time = self._server.getTime()
+    self._flight_end_time = None
+    self._flying_now = True
+    self._waiting = False
+    self.log = logger(self.__print_msg_fn)
+    ##  Get preflight data
+    self._variables = self._resetVariables(self.__input_variables)
+    self._variables.addData(self._server.getData(start_time="-60 MINUTE",
+                                     variables=self._variables.keys()))
+    self._updater = NDatabaseLiveUpdater(server=self._server,
+                                         variables=self._variables)
+    self.resetAlgos()
+
+  def _flightEnding(self):
+    ## Output file string creation
+    if self._output_file_path is None:
+      out_file_name = output_file_str(self._server.getFlightInformation())
+    else:
+      out_file_name = self._output_file_path
+    print ("[%sZ] Outputting file to %s" %
+           (self._server.getTimeStr(), out_file_name))
+
+    ## Actually try to write the file
+    try:
+      out_file = NRTFile()
+      labels = self._variables.labels
+      data = self._variables.sliceWithTime(None, None)
+      if self._header == False:
+        out_file.write(file_name=out_file_name,
+                       labels=labels,
+                       data=data)
+      else:
+        out_file.write(file_name=out_file_name,
+                       header=self._server.getDatabaseStructure(),
+                       labels=labels,
+                       data=data)
+
+    except Exception, e:
+      print "%s: Could not create data file" % self.__class__.__name__
+      print e
+
+    ## Now try to mail the file
+    try:
+      mail_time = self._server.getTimeStr()
+
+      ## TODO: Change email subject to project name and flight number
+      if self._email is not None:
+        if self.log.messages != []:
+          body_msg = "\n".join(self.log.messages)
+        else:
+          body_msg = "Data attached"
+        self._email(self._server.getFlightInformation(), [out_file_name], body_msg)
+
+        print "[%s] Sent mail." % self._server.getTimeStr()
+    except Exception, e:
+      print "%s: Could not send mail" % self.__class__.__name__
+      print e
+
+    self._flying_now = False
+    self._flight_end_time = self._server.getTime()
+    self._num_flight += 1
+    self.log = None
+    self._variables = None
+    self._updater = None
+
+  def attachAlgo(self, variables=None,
+                       start_fn=None, process_fn=None,
+                       description = None,
+                       *extra, **kwds):
+    """
+    Store an NAlgorithm object to later call its process function in
+    NAlgorithm.run(). Can use a setup function to programmatically create a
+    persistent local scope.
+    """
+    algo = NAlgorithm()
+    ## Types module required to add to instance of class,
+    ## see http://en.wikibooks.org/wiki/Python_Programming/
+    ##            Classes#To_an_instance_of_a_class
+    algo.setup = types.MethodType(start_fn, algo, NAlgorithm)
+    algo.process = types.MethodType(process_fn, algo, NAlgorithm)
+
+    if description is None:
+      algo.desc = "None"
+    else:
+      algo.desc = description
+
+    self.__input_algos += [(algo, variables)]
+
+  def removeAlgos(self):
+    """ Remove all attached algorithms. """
+    for algo in self._algos: self._algos.remove(algo)
+
+  def resetAlgos(self):
+    """ Return to setup state. """
+    for algo_var in self.__input_algos:
+      algo = algo_var[0]
+      variables = algo_var[1]
+
+      bad_variables = self._checkIfVariablesExists(variables)
+      if len(bad_variables) != 0:
+        print "Could not run algorithm that has the following bad variable names: %s" % bad_variables
+        print "Algorithm description: %s" % algo.desc
+        continue
+
+      var_list = []
+      for var in variables:
+        var_list.append(self._variables.getNVar(var))
+
+      algo.variables = NVarSet(var_list)
+
+      algo.log = self.log
+      algo.flight_start_time = self._flight_start_time
+      algo.reset()
+      self._algos.append(algo)
 
 
   def attachBoundsCheck(self, variable_name=None,
@@ -306,79 +371,43 @@ class watcher(object):
     ## Attach method to object of NAlgorithm
     self.attachAlgo(variables=[variable_name],
                     start_fn=boundsCheckSetup,
-                    process_fn=boundsCheck)
+                    process_fn=boundsCheck,
+                    description="Bounds check for %s" % variable_name)
 
   def _badDataCheck(self, variables=None):
+    for var in variables:
+      self.__badDataForVariable(var)
+
+  def __badDataForVariable(self, variable_name=None):
     bad_data_flags = self._server.getBadDataValues()
 
-    for var in variables:
-      bad_flag = bad_data_flags[var.upper()]
-      self.__badDataForVariable(var, bad_flag)
-
-  def __badDataForVariable(self, variable_name=None, bad_flag=-32767):
     def setup_bad(self, *args, **kwds):
-      self.out_of_bounds = bad_flag
+      self._bad_table = bad_data_flags
+      self.var = variable_name
+      self.out_of_bounds = bad_data_flags[self.var.upper()]
       self.error = False
       self.name = variable_name
 
     def process_bad(self, tm, data):
-      if data[0] == bad_flag and self.error == False:
+      if data[0] == self.out_of_bounds and self.error == False:
         self.log.print_msg('%s MISSING DATA' % self.name, tm)
         self.error = True
-      elif data[0] != bad_flag and self.error == True:
+      elif data[0] != self.out_of_bounds and self.error == True:
         self.log.print_msg('%s no longer has missing data' % self.name, tm)
         self.error = False
 
     self.attachAlgo(variables=[variable_name],
                     start_fn=setup_bad,
-                    process_fn=process_bad)
+                    process_fn=process_bad,
+                    description= "Bad data check for %s" % variable_name)
 
-  def attachAlgo(self, variables=None,
-                       start_fn=None, process_fn=None,
-                       *extra, **kwds):
-    """
-    Store an NAlgorithm object to later call its process function in
-    NAlgorithm.run(). Can use a setup function to programmatically create a
-    persistent local scope.
-    """
-    algo = NAlgorithm()
-    ## Types module required to add to instance of class,
-    ## see http://en.wikibooks.org/wiki/Python_Programming/
-    ##            Classes#To_an_instance_of_a_class
-    algo.setup = types.MethodType(start_fn, algo, NAlgorithm)
-    algo.process = types.MethodType(process_fn, algo, NAlgorithm)
+  def _resetVariables(self, variables):
+    ## Remove dud variables
+    variables = [var for var in variables if (var in self._server.variable_list)]
+    if len(variables) != len(self.__input_variables):
+      print "The following variables do not exist: %s" % [var for var in self.__input_variables if var not in variables]
+    return NVarSet(variables)
 
-    ## Force load NVars into instantiated scope, by object (are updated when
-    ## updater.update is called
-    algo.log = self.log  ## Allows message redirection.
+  def _checkIfVariablesExists(self, variables):
+    return [var for var in variables if not ((var in self.__input_variables) and (var in self._server.variable_list))]
 
-    var_list = []
-    for var in variables:
-      var_list.append(self._variables.getNVar(var))
-
-    algo.variables = NVarSet(var_list)
-
-    self._algos += [algo]  ## Must be in [] to add to list
-    self.__input_algos += [algo]
-
-  def removeAlgos(self):
-    """ Remove all attached algorithms. """
-    for algo in self._algos: self._algos.remove(algo)
-
-  def resetAlgos(self):
-    """ Return to setup state. """
-    for algo in self._algos:
-      algo.flight_start_time = self._flight_start_time
-      algo.reset()
-
-  def _flying_setup(self):
-        self._flight_start_time = self._server.getTime()
-        self._flight_end_time = None
-        self._flying_now = True
-        self._waiting = False
-        ##  Get preflight data
-        self._variables.addData(self._server.getData(start_time="-60 MINUTE",
-                                         variables=self._variables.keys()))
-        self.resetAlgos()
-        self._updater = NDatabaseLiveUpdater(server=self._server,
-                                             variables=self._variables)

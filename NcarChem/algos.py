@@ -33,6 +33,7 @@ class NAlgorithm(object):
     self.updated = False
     self.new_data = None
     self._flight_start_time = None
+    self.desc = "None"
 
 
     self.setup = lambda : None
