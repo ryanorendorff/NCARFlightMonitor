@@ -1,76 +1,81 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-## Test of live data reading.
+## The shell that holds the algorithms that are attached to a watcher object.
+## These objects are not designed to be used for purposes other than the real
+## time analysis through the watcher class.
 ##
 ## Author: Ryan Orendorff <ryano@ucar.edu>
-## Date: 21/07/11 10:31:47
-##
+## Date: 30/08/11 13:06:03
 
-## Syntax notes for coders who are not author
-## - A double pound (##) is a comment, a single is commented code
+## TODO: Allow for the process function to accept and return data, for use in
+## a generic NAlgorithm class.
+
+## TODO: consider renaming to NRTAlgorithm and creating a more generic
+## NAlgorithm class that can be used outside of a NcarChem.watcher
+## instantiated object.
 
 
 ## --------------------------------------------------------------------------
 ## Imports and Globals
 ## --------------------------------------------------------------------------
-
-## Time based imports
 import datetime
 
 ## --------------------------------------------------------------------------
 ## Classes
 ## --------------------------------------------------------------------------
+
+
 class NAlgorithm(object):
-  """
-  A container class for processing data. Users are meant to place a processing
-  algorithm in either an instance of the class or the class itself (as a
-  process() function). This function does not currenetly accept parameters.
-  """
-  def __init__(self):
-    self.last_date = None
-    self.variables = None
-    self.updated = False
-    self.new_data = None
-    self._flight_start_time = None
-    self.desc = "None"
+    """
+    A container class for processing data to be used with the
+    NcarChem.watcher.attachAlgorithm() function. The variables, setup and
+    process objects need to be added to the algorithm through dot notation
+    after instantiation of the class.
+    """
+    def __init__(self):
+        self.last_date = None
+        self.variables = None
+        self.updated = False
+        self.new_data = None
+        self._flight_start_time = None
+        self.desc = "None"
 
+        self.setup = lambda: None
+        self.process = lambda: None
 
-    self.setup = lambda : None
-    self.process = lambda : None
+    @property
+    def flight_start_time(self):
+        return self._flight_start_time
 
-  @property
-  def flight_start_time(self):
-    return self._flight_start_time
+    ## algo._flight_start_time is a shallow copy!
+    @flight_start_time.setter
+    def flight_start_time(self, value):
+        self._flight_start_time = value
 
-  ## algo._flight_start_time is a shallow copy!
-  @flight_start_time.setter
-  def flight_start_time(self, value):
-    self._flight_start_time = value
+    def run(self):
+        new_date = self._time.getTimeFromPos(-1)
+        if new_date > self.last_date:
+            self.updated = True
 
-  def run(self):
-    new_date = self._time.getTimeFromPos(-1)
-    if new_date > self.last_date:
-      self.updated = True
+            new_data = self.variables.sliceWithTime(self.last_date, None)[1:]
+            for point in new_data:
+                tm = point[0]
+                update = point[1:]
+                try:
+                    self.process(tm, update)
+                except Exception, e:
+                    raise e
 
-      new_data = self.variables.sliceWithTime(self.last_date, None)[1:]
-      for point in new_data:
-        tm = point[0]
-        update = point[1:]
+            self.last_date = new_date
+        else:
+            self.updated = False
+
+    def reset(self):
         try:
-          self.process(tm, update)
+            self.setup()
+            self._time = self.variables.getNVar(self.variables.keys()[0])
+            self.last_date = self._time.getTimeFromPos(-1)
         except Exception, e:
-          raise e
-
-      self.last_date = new_date
-    else:
-      self.updated = False
-
-  def reset(self):
-    try:
-      self.setup()
-      self._time = self.variables.getNVar(self.variables.keys()[0])
-      self.last_date = self._time.getTimeFromPos(-1)
-    except Exception, e:
-      print "Could not rerun setup command."
-      print e
+            print "Could not rerun setup command."
+            print e

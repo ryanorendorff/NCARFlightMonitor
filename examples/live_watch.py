@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-## Test of live data reading.
+## Record variables during flights of a particular airplane, and place
+## these in an ascii file in the system's temp directory after a flight.
+## Additionally informational messages about the flight are created for bad
+## data flags by default.
+##
+## An additional algorithm (located in 'examples/functions.py') is run against
+## the data as it arrives. Please see the functions file for more information.
 ##
 ## Author: Ryan Orendorff <ryano@ucar.edu>
-## Date: 21/07/11 10:31:47
+## Date: 30/08/11 12:38:26
 ##
-
-## Syntax notes for coders who are not author
-## - A double pound (##) is a comment, a single is commented code
-
 
 ## --------------------------------------------------------------------------
 ## Imports and Globals
@@ -20,46 +22,19 @@ import functions
 
 ## System
 import os
-## --------------------------------------------------------------------------
-## Functions
-## --------------------------------------------------------------------------
-
-## --------------------------------------------------------------------------
-## Classes
-## --------------------------------------------------------------------------
 
 ## --------------------------------------------------------------------------
 ## Start command line interface (main)
 ## --------------------------------------------------------------------------
 
 if __name__ == "__main__":
-  import sys
+    import sys
 
-  ## Functions used to determine if coraw_al is out of range
+    watch_server = watcher(database="GV")
 
-  ## Start watching the server
-  watch_server = watcher(database="hippo5_rf02",
-                         host="192.168.1.49",
-                         user="postgres",
-                         simulate_start_time=
-                           datetime.datetime(2011, 8, 11, 14, 30, 0),
-                         variables=('ggalt', 'tasx',
-                                    'coraw_al', 'co_qlive',
-                                    'co2_qlive', 'ch4_qlive',
-                                    'atx', 'o3mr_csd', 'psxc', 'theta', 'wic')
-                         )
+    watch_server.attachAlgo(variables=('coraw_al',),
+                            start_fn=functions.setup_co,
+                            process_fn=functions.process_co,
+                            description="CO raw cal checker")
 
-  #watch_server = watcher(database="GV",
-                         ##header=True,
-                         ##email_fn=sendMail,
-                         #simulate_start_time=
-                           #datetime.datetime(2011, 8, 19, 17, 30, 0),
-                         #variables=('ggalt', 'tasx',
-                                    #'coraw_al', 'co_qlive',
-                                    #'co2_qlive', 'ch4_qlive',
-                                    #'atx', 'o3mr_csd', 'psxc', 'theta', 'wic')
-                         #)
-  watch_server.attachAlgo(variables=('coraw_al',), start_fn=functions.setup_co, process_fn=functions.process_co)
-  watch_server.attachAlgo(variables=('coraw_al','co_qlive'), start_fn=functions.setup_follow, process_fn=functions.process_follow)
-
-  watch_server.runOnce()
+    watch_server.startWatching()

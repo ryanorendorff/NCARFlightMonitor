@@ -7,8 +7,6 @@
 ## Date: 21/07/11 10:31:47
 ##
 
-## Syntax notes for coders who are not author
-## - A double pound (##) is a comment, a single is commented code
 
 
 ## --------------------------------------------------------------------------
