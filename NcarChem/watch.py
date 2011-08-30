@@ -119,6 +119,7 @@ class watcher(object):
     self._output_file_path = output_file_path
 
     self._algos = []
+    self.__input_algos = []
 
     self._flying_now = False
     self._flight_start_time = None
@@ -254,16 +255,7 @@ class watcher(object):
     else:
       if self._flying_now == False:  ## Just started flying
         self.log.print_msg("In Flight.", self._server.getTimeStr())
-        self._flight_start_time = self._server.getTime()
-        self._flight_end_time = None
-        self._flying_now = True
-        self._waiting = False
-        ##  Get preflight data
-        self._variables.addData(self._server.getData(start_time="-60 MINUTE",
-                                         variables=self._variables.keys()))
-        self.resetAlgos()
-        self._updater = NDatabaseLiveUpdater(server=self._server,
-                                             variables=self._variables)
+        self._reset()
 
       self._updater.update()  ## Can return none, sleeps for at least DataRate
                               ## seconds (three seconds by default).
@@ -367,6 +359,7 @@ class watcher(object):
     algo.variables = NVarSet(var_list)
 
     self._algos += [algo]  ## Must be in [] to add to list
+    self.__input_algos += [algo]
 
   def removeAlgos(self):
     """ Remove all attached algorithms. """
@@ -377,3 +370,15 @@ class watcher(object):
     for algo in self._algos:
       algo.flight_start_time = self._flight_start_time
       algo.reset()
+
+  def _flying_setup(self):
+        self._flight_start_time = self._server.getTime()
+        self._flight_end_time = None
+        self._flying_now = True
+        self._waiting = False
+        ##  Get preflight data
+        self._variables.addData(self._server.getData(start_time="-60 MINUTE",
+                                         variables=self._variables.keys()))
+        self.resetAlgos()
+        self._updater = NDatabaseLiveUpdater(server=self._server,
+                                             variables=self._variables)
