@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-## Connect to EOL Real time databases.
+## Connect to EOL Real time databases. Additional functions for determining
+## if the plane is in flight are available.
 ##
 ## Author: Ryan Orendorff <ryano@ucar.edu>
-## Date: 21/07/11 10:31:47
+## Date: 04/09/11 03:09:24
 ##
 
 ## --------------------------------------------------------------------------
@@ -75,10 +76,10 @@ def _loadFile(file_path, dbname, host, user, password, dbstart):
     data = nfile.data
 
     ## Create a new test database
-    conn = psycopg2.connect(database=dbstart, \
-                                                    user=user, \
-                                                    host=host, \
-                                                    password=password)
+    conn = psycopg2.connect(database=dbstart,
+                            user=user,
+                            host=host,
+                            password=password)
     conn.set_isolation_level(0)
     cursor = conn.cursor()
     cursor.execute("CREATE DATABASE %s;" % dbname)
@@ -86,10 +87,10 @@ def _loadFile(file_path, dbname, host, user, password, dbstart):
     conn.close()
 
     ## Join the new database
-    conn = psycopg2.connect(database=dbname, \
-                                                    user=user, \
-                                                    host=host, \
-                                                    password=password)
+    conn = psycopg2.connect(database=dbname,
+                            user=user,
+                            host=host,
+                            password=password)
 
     cursor = conn.cursor()
     conn.set_isolation_level(0)
@@ -126,10 +127,10 @@ def _loadVariables(file_path, dbname, host, user="postgres", password=""):
     print "User: %s" % user
     print "Host: %s" % host
     print "Password: %s" % password
-    conn = psycopg2.connect(database=dbname, \
-                                                    user=user, \
-                                                    host=host, \
-                                                    password=password)
+    conn = psycopg2.connect(database=dbname,
+                            user=user,
+                            host=host,
+                            password=password)
 
     cursor = conn.cursor()
 
@@ -434,8 +435,8 @@ class NDatabase(object):
                          + self._current_time).replace(microsecond=0))
 
     def getData(self, variables=None,
-                                        start_time=None, end_time=None,
-                                        number_entries=None):
+                      start_time=None, end_time=None,
+                      number_entries=None):
         """
         Get data from the server for the selected variables, where the
         variables are a tuple/list. Can be manipulated to get data from a
@@ -445,8 +446,8 @@ class NDatabase(object):
         ## Use server now function if not in simulation mode, otherwise perform
         ## the SQL query with the simulated current time as the upper bound.
         NOW = (str(self._getSimulatedCurrentTime())
-                    if self._simulate_start_time is not None
-                    else "NOW()")
+               if self._simulate_start_time is not None
+               else "NOW()")
 
         if isinstance(start_time, datetime.datetime):
             start_time = str(start_time)
@@ -552,7 +553,7 @@ class NDatabase(object):
 
     def getBadDataValues(self):
         cursor = self._conn.cursor()
-        cursor.execute('select name, missing_value from variable_list ;')
+        cursor.execute('SELECT name, missing_value FROM variable_list ;')
         return dict(cursor.fetchall())
 
     def getDatabaseStructure(self):
