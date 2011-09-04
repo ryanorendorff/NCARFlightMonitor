@@ -33,7 +33,6 @@
 ##
 ## Author: Ryan Orendorff <ryano@ucar.edu>
 ## Date: 04/09/11 03:10:31
-##
 
 ## Syntax notes for coders who are not author
 ## - A double pound (##) is a comment, a single is commented code
