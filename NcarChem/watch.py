@@ -1,7 +1,35 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-## File Description
+## Contains the watcher class that combines all of the other parts of the
+## package together into a coherent and easy to use flight tracker. This class
+## can be used in a stand alone manner in its own application or attached to
+## another process like an IRC chat bot.
+##
+## The class is designed to wait for a flight and monitor the desired
+## variables (or all the server variables if none are specified) when a flight
+## is detected. The data is then logged in an NVarSet, run through data
+## integrity checking algorithms, and then output to a file in the temporary
+## directly. A emailing function can be attached to the class to email this
+## file to desired recipients.
+##
+## The watcher class supports the ability for arbitrary real time data
+## processing algorithms to be attached to the class, where each time point
+## is passed to the algorithm one at a time and in order. Default algorithms
+## check for bad data flags and if a variable is inside bounds (although the
+## bounds are set by the user of the class). All attached algorithms are
+## tested at every point during a flight; if an algorithm fails it is removed
+## from the list of processing algorithms and does not run again until the
+## next flight.
+##
+## Additionally the class can be set to run its own continuous monitoring loop
+## with startWatching(), run through a few flights with a continuous loop with
+## runNumFlights(), or it can be set to use its monitoring capabilities in a
+## non-blocking manner, which allows the class to be run inside other loops
+## such as event loops for IRC bots. The non-blocking mode will catch all data
+## run in-between its last call; the non-blocking call does not know about the
+## data acquisition rate and just attempts its best to get the most recent
+## data.
 ##
 ## Author: Ryan Orendorff <ryano@ucar.edu>
 ## Date: 04/09/11 03:10:31
