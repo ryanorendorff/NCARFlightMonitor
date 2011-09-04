@@ -1,9 +1,11 @@
-v0.02 () - Ryan Orendorff <ryano@ucar.edu>
+v0.02 (soon 04/09/11 03:35:11) - Ryan Orendorff <ryano@ucar.edu>
 ==========================================
 
 Features
 --------
-- NVar and NVarSet can now get data from slices that use either integer or datetime indices.
+- NVar and NVarSet can now get data from slices that use either integer or
+  datetime indices.
+
   For example, one can get all of the slices from a certain time `last_upate`
   by doing `NVarSet[last_update:]`, which returns a list of tuples who have the
   order of `NVarSet.labels`. To get a list that includes datetime variables,
@@ -13,12 +15,75 @@ Features
   stop value). Note that for these functions, when called with one value, set
   only the stop index, and when called with two, set start to the first and
   stop to the second value.
-- Variables attached to watcher class are now checked for the missing data flag automatically.
+
+- Slices can include datetime using the function `sliceWithTime([start=Beginning], stop)`.
+- Can do `new_nvar = NVar1 + NVar2` or `new_nvar = NVar1 + [(datetime,
+  data),...]`. This returns a completely new NVAR instance (even when it is
+  done though +=) that is sorted by datetime. Because of the new instantiation
+  `new_nvar` is not part of whatever NVarSet that NVar1 or NVar2 was attached
+  to.
+- Algorithms have access to flight start time.
+- Variables attached to watcher class are now checked for the missing data flag
+  automatically.
+- File output can be redirected from watcher class by specifying
+  `output_file_path` when instantiating the class.
+- watcher class can now run n times with `runNumFlights(n)`.
+- If `variables` option in watcher instantiation is not set (or in
+  database.NDatabaseLiveUpdater) then all variables from the server are
+  captured.
+- Algorithms are run for each flight. This allows one to keep an instance of a
+  watcher class running all of the time and monitor only those instruments that
+  are on the aircraft during the flight. All algorithms that "fail" for reasons
+  such as the variable name does not exist are removed from the algorithms run
+  during that flight but will be reinstated for the next flight.
+- Similarly non-existent/bad variable names gracefully disappear from output
+  and data tracking, allowing a program to run over multiple projects as the
+  instruments are swapped in and out (assuming the instrument variable names
+  stay constant)
+- Algorithms can have descriptions that make it easier to find problems during
+  debugging.
+- Informational messages are logged and can be put in emails, replayed to IRC
+  users, or others (through `watcher.log.messages`).
+- Can specify a special print function for a watcher class (during
+  instantiation) through `print_msg_fn`.
+- Watcher class can output to a specific file instead of the temp directory
+  with `output_file_path` option during instantiation
+- Header for text files is optional through watcher instantiation option
+  `header=True/False`, defaults to False.
+
 
 Fixes
----------
-- Attached algorithms are passed only the most recent data point and a string timestamp in the form `process(time_stamp, data)`
-- Mail function moved out of code because it is highly variable based on mail server.
+-----
+- NVar and NVarSet `clearData()` methods removed, use either `del` or the
+  gargage collector. This is more in line with a read-only design (tuple like).
+- The "Waiting for flight" message now only appears once per wait period.
+- Attached algorithms are passed only the most recent data point and a string
+  timestamp in the form `process(time_stamp, data)`, previously this had to be
+  done by hand.
+- watcher class now uses server time for all notices (before it would use the
+  local computers UTC time when out of flight and at the very beginning of a
+  flight, for status messages only).
+- Error messages now output the class that they came from.
+- If the TASX variable throws a bad data value, the speed is calculated from
+  GPS coordinates. If that fails, use the last known flying status.
+- CO cal check function now looks for late cals from flight start instead of
+  from the first cal.
+- Mail function moved out of code because it is highly variable based on mail
+  server.
+- PEP8 compliant
+
+Bugs Squashed
+-------------
+- OS/filesystem independent watcher class file output.
+- Update flight information in NDatabase object when a new flight is detected,
+  previously only got this data on the object's creatiob
+- Can load .asc files with blank lines in them.
+- Algorithms are reset each time a flight begins. This means that if an
+  algorithm was trying to measure mean it would not include the data from all
+  of the previous flights. Prior to this all of the global variables would
+  carry over between flights. Now at the beginning of each flight the start\_fn
+  is run again.
+
 
 v0.01 (10/08/11 19:09:06) - Ryan Orendorff <ryano@ucar.edu>
 ===========================================================
