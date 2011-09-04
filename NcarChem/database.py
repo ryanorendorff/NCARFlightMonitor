@@ -103,7 +103,8 @@ def _loadFile(file_path, dbname, host, user, password, dbstart):
     for row in data:
         data_piece = ""
         for item in row:
-            data_piece += "'%s'," % str(item)
+            data_piece = "".join([data_piece, "'%s'," % str(item)])
+
         cursor.execute(INSERT_CMD % data_piece.rstrip(', '))
 
     ## Close all connections to the database, will be picked up later.
@@ -138,7 +139,7 @@ def _loadVariables(file_path, dbname, host, user="postgres", password=""):
     for row in data:
         data_piece = ""
         for item in row:
-            data_piece += "'%s'," % str(item)
+            data_piece = "".join([data_piece, "'%s'," % str(item)])
         cursor.execute(INSERT_CMD % data_piece.rstrip(', '))
 
     ## Close all connections to the database, will be picked up later.
@@ -465,7 +466,7 @@ class NDatabase(object):
                     % (self.__class__.__name__, var))
 
         ## All Aeros displayable data from raf_lrt
-        sql_command += var_str + " FROM raf_lrt "
+        sql_command = "".join([sql_command, var_str, " FROM raf_lrt "])
 
         ## Open SQL connection
         cursor = self._conn.cursor()
@@ -531,7 +532,7 @@ class NDatabase(object):
                                   % self.__class__.__name__)
             return
 
-        sql_command += time_interval + ";"
+        sql_command = "".join([sql_command, time_interval, ';'])
         data = []
         try:
             cursor.execute(sql_command)
@@ -597,7 +598,7 @@ class NDatabase(object):
             columns = cursor.fetchall()
 
             ## Each column string is (COLUMNS, (col1, type, null?), etc)
-            tbl_string += "('COLUMNS',"
+            tbl_string = "".join([tbl_string, "('COLUMNS',"])
             for col in columns:
                 ## Get column information from returned string.
                 col_name = col[0]
@@ -633,10 +634,13 @@ class NDatabase(object):
 
             ## Add constraint if applicable
             if table in constraints:
-                tbl_string += ";('CONSTRAINT', '%s')" % constraints[table]
+                tbl_string = "".join([tbl_string,
+                                      (";('CONSTRAINT', '%s')"
+                                       % constraints[table])]
+                                    )
 
             ## Data in table goes after the % character
-            tbl_string += '%'
+            tbl_string = "".join([tbl_string, '%'])
 
             ## Ignore raf_lrt, that is where the Aeros data comes from.
             if table != "raf_lrt":
