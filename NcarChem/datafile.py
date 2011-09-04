@@ -1,10 +1,21 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-## File Description
+## Handling of asc files from Aeros. Includes the ability to output and parse
+## a modified format where '#' at the beginning of a line represents a comment
+## and "#!" at the beginning represents a custom sql data structure.
+##
+## The custom sql structure is as follows (all as one line
+## #! table_name = ('COLUMNS', (Column Name, data tyoe, is null),...);
+##                 ('CONSTRAINT', constraint column name)
+##                 %((data in column 1), ...)
+##
+## the "CONSTRAINT" line is optional. If it is not there, remove the ';' at
+## the end of the COLUMNS line. This can tentatively support SQL rules, but
+## this functionality is currently not enabled.
 ##
 ## Author: Ryan Orendorff <ryano@ucar.edu>
-## Date: 21/07/11 10:31:47
+## Date: 04/09/11 03:09:14
 ##
 
 ## Syntax notes for coders who are not author
