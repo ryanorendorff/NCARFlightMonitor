@@ -122,17 +122,17 @@ class watcher(object):
     an example, see the main section of this source,
     """
     def __init__(self, database=None,
-                                         host="eol-rt-data.guest.ucar.edu",
-                                         user="ads",
-                                         simulate_start_time=None,
-                                         simulate_file=None,
-                                         header=False,
-                                         email_fn=None,
-                                         print_msg_fn=None,
-                                         output_file_path=None,
-                                         variables=None,
-                                         *extra,
-                                         **kwds):
+                       host="eol-rt-data.guest.ucar.edu",
+                       user="ads",
+                       simulate_start_time=None,
+                       simulate_file=None,
+                       header=False,
+                       email_fn=None,
+                       print_msg_fn=None,
+                       output_file_path=None,
+                       variables=None,
+                       *extra,
+                       **kwds):
         """
         Give the watcher class the database information and email to send the
         resulting files.
@@ -284,14 +284,13 @@ class watcher(object):
             data = self._variables.sliceWithTime(None, None)
             if self._header == False:
                 out_file.write(file_name=out_file_name,
-                                             labels=labels,
-                                             data=data)
+                               labels=labels,
+                               data=data)
             else:
                 out_file.write(file_name=out_file_name,
-                                             header=self._server
-                                               .getDatabaseStructure(),
-                                             labels=labels,
-                                             data=data)
+                               header=self._server.getDatabaseStructure(),
+                               labels=labels,
+                               data=data)
 
         except Exception, e:
             print "%s: Could not create data file" % self.__class__.__name__
@@ -411,10 +410,10 @@ class watcher(object):
 
         ## Attach method to object of NAlgorithm
         self.attachAlgo(variables=[variable_name],
-                                        start_fn=boundsCheckSetup,
-                                        process_fn=boundsCheck,
-                                        description=("Bounds check for %s"
-                                                     % variable_name))
+                        start_fn=boundsCheckSetup,
+                        process_fn=boundsCheck,
+                        description=("Bounds check for %s"
+                                     % variable_name))
 
     def _badDataCheck(self, variables=None):
         for var in variables:
@@ -440,10 +439,10 @@ class watcher(object):
                 self.error = False
 
         self.attachAlgo(variables=[variable_name],
-                                        start_fn=setup_bad,
-                                        process_fn=process_bad,
-                                        description=("Bad data check for %s"
-                                                     % variable_name))
+                        start_fn=setup_bad,
+                        process_fn=process_bad,
+                        description=("Bad data check for %s"
+                                     % variable_name))
 
     def _resetVariables(self, variables):
         ## Remove dud variables

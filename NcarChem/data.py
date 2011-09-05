@@ -131,8 +131,8 @@ class NVarSet(OrderedDict):
         elif len(args) == 2:
             slc = slice(args[0], args[1], None)
         else:
-            raise ValueError('sliceWithTime only accepts stop'
-                                             'or start, stop arguments')
+            raise ValueError('sliceWithTime only accepts stop '
+                             'or start, stop arguments')
         data = []
 
         start, stop = self.__sliceToIndex(slc)
@@ -310,7 +310,7 @@ class NVar(OrderedDict):
             return var
 
     def getTimeFromPos(self, index):
-        """ Returns the date associated with an integer index.    """
+        """ Returns the date associated with an integer index. """
         if index < 0:
             return self._time_of_pos[(OrderedDict.__len__(self)) + index]
         else:

@@ -202,12 +202,12 @@ class NDatabase(object):
 
     ## All defaults used at RAF as of 10/08/11 02:48:30
     def __init__(self, host="eol-rt-data.guest.ucar.edu",
-                                         user="ads",
-                                         password="",
-                                         database=None,
-                                         simulate_start_time=None,
-                                         simulate_fast=False,
-                                         simulate_file=None):
+                       user="ads",
+                       password="",
+                       database=None,
+                       simulate_start_time=None,
+                       simulate_fast=False,
+                       simulate_file=None):
         ## Database related
         self._database = database
         self._user = user
