@@ -117,7 +117,7 @@ class NVarSet(OrderedDict):
             data = []
 
             start, stop = self.__sliceToIndex(item)
-            for counter in range(start, stop):
+            for counter in xrange(start, stop):
                 data += (self.__getLine(pos=counter, add_time=False), )
 
             return data
@@ -136,7 +136,7 @@ class NVarSet(OrderedDict):
         data = []
 
         start, stop = self.__sliceToIndex(slc)
-        for counter in range(start, stop):
+        for counter in xrange(start, stop):
             data += (self.__getLine(pos=counter, add_time=True), )
 
         return data
@@ -219,7 +219,7 @@ class NVar(OrderedDict):
             data = []
 
             start, stop = self.__sliceToIndex(item)
-            for point in range(start, stop):
+            for point in xrange(start, stop):
                 data += [self.__getitem__(point)]
 
             return data
@@ -244,7 +244,7 @@ class NVar(OrderedDict):
         data = []
 
         start, stop = self.__sliceToIndex(slc)
-        for point in range(start, stop):
+        for point in xrange(start, stop):
             data += [(self.getTimeFromPos(point), self.__getitem__(point))]
 
         return data
