@@ -334,6 +334,9 @@ class NDatabase(object):
         if len(data) == 0:
             return self._bad_data_values['TASX']
 
+        if self._bad_data_values['GGLAT'] in data:
+            return self._bad_data_values['TASX']
+
         lat1 = math.radians(data[0][1])
         lat2 = math.radians(data[1][1])
         lon1 = math.radians(data[0][2])

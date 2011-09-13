@@ -323,6 +323,7 @@ class watcher(object):
 
     def attachAlgo(self, variables=None,
                          start_fn=None, process_fn=None,
+                         run_mode=None,
                          description=None,
                          *extra, **kwds):
         """
@@ -330,17 +331,18 @@ class watcher(object):
         NAlgorithm.run(). Can use a setup function to programmatically create
         a persistent local scope.
         """
-        algo = NAlgorithm()
+        if description is None:
+            description = "No Description"
+
+        if run_mode is None:
+            run_mode = "new data"
+
         ## Types module required to add to instance of class,
         ## see http://en.wikibooks.org/wiki/Python_Programming/
         ##                        Classes#To_an_instance_of_a_class
+        algo = NAlgorithm(run_mode=run_mode, desc=description)
         algo.setup = types.MethodType(start_fn, algo, NAlgorithm)
         algo.process = types.MethodType(process_fn, algo, NAlgorithm)
-
-        if description is None:
-            algo.desc = "None"
-        else:
-            algo.desc = description
 
         self.__input_algos += [(algo, variables)]
 

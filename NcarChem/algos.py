@@ -33,16 +33,17 @@ class NAlgorithm(object):
     process objects need to be added to the algorithm through dot notation
     after instantiation of the class.
     """
-    def __init__(self):
+    def __init__(self, run_mode="new data", desc="No Description"):
         self.last_date = None
         self.variables = None
         self.updated = False
         self.new_data = None
         self._flight_start_time = None
-        self.desc = "None"
+        self.desc = desc
 
         self.setup = lambda: None
         self.process = lambda: None
+        self._run_mode = run_mode
 
     @property
     def flight_start_time(self):
@@ -57,19 +58,23 @@ class NAlgorithm(object):
         new_date = self._time.getTimeFromPos(-1)
         if new_date > self.last_date:
             self.updated = True
-
-            new_data = self.variables.sliceWithTime(self.last_date, None)[1:]
-            for point in new_data:
-                tm = point[0]
-                update = point[1:]
-                try:
-                    self.process(tm, update)
-                except Exception, e:
-                    raise e
-
+            self._process_update()
             self.last_date = new_date
         else:
             self.updated = False
+            if self._run_mode == "every update":
+                self.process(new_date, None)
+
+    def _process_update(self):
+        new_data = self.variables.sliceWithTime(self.last_date, None)[1:]
+
+        for point in new_data:
+            tm = point[0]
+            update = point[1:]
+            try:
+                self.process(tm, update)
+            except Exception, e:
+                raise e
 
     def reset(self):
         try:
