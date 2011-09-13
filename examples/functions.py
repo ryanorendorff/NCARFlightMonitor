@@ -41,7 +41,12 @@ def setup_co(self, *args, **kwds):
 
 
 def process_co(self, tm, data):
-    """ Is the coraw_al value below calibrating for the current data point? """
+    """
+    Is the coraw_al value below calibrating for the current data point?
+
+    This is a run_mode=None or unset mode, where the function is only called
+    if new data points are found (hence data will never be None)
+    """
     coraw_al = data[0]
 
     ## Is a calibration late? Starts measuring from start time of flight, and
@@ -68,6 +73,32 @@ def process_co(self, tm, data):
         self.cal = False
 
 
+def setup_lost_satcom(self):
+    """
+    Setup for determining satcom interruptions. Requires a certain number of
+    missing data points in order to declare satcom as offline.
+    """
+    self.lost_count = 0
+    self.lost_limit = 4
+
+
+def process_lost_satcom(self, tm, data):
+    """
+    Have we lost satcom?
+
+    This is a run_mode="every update" type of algorithm. It is therefore
+    possible for the data value to be None (tm is always set)
+    """
+    if data is None:
+        self.lost_count += 1
+        if self.lost_count == self.lost_limit:
+            self.log.print_msg("Satcom interruption", tm)
+    elif data is not None:
+        if self.lost_count >= self.lost_limit:
+            self.log.print_msg("Satcom returned", tm)
+        self.lost_count = 0
+
+
 ## sendMail in watch module is empty, it must be filled out later in order
 ## to send emails. This was done because there is no cross platform, cross
 ## mail server implementation that works to send emails except an SMTP server,
@@ -75,7 +106,8 @@ def process_co(self, tm, data):
 def sendMail(flight_info=None, files=None, body_msg=None):
     """
     Mail function copied from Stack Overflow. Uses gmail account for SMTP
-    server.
+    server and a file called .pass that contains the server login information
+    in the runtime directory.
     """
     pw = open(".pass", 'r').read().split("\n")
     fro = pw[0]

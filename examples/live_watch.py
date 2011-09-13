@@ -37,4 +37,10 @@ if __name__ == "__main__":
                             process_fn=functions.process_co,
                             description="CO raw cal checker")
 
+    watch_server.attachAlgo(variables=('coraw_al',),
+                            start_fn=functions.setup_lost_satcom,
+                            process_fn=functions.process_lost_satcom,
+                            run_mode="every update",
+                            description="Satcom loss indicator")
+
     watch_server.startWatching()
