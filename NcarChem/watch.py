@@ -198,8 +198,25 @@ class watcher(object):
             self.run()
 
     def runNumFlights(self, number_flights):
+        """ Run the program for a certain number of flights. """
         while self._num_flight < number_flights:
             self.run()
+
+    def runForDuration(self, duration):
+        """ Run the program for a certain duration """
+        start_time = self._server.getTime()
+        while duration > (self._server.getTime() - start_time):
+            self.run()
+
+        self._flightEnding()
+
+    def runTillTime(self, run_time):
+        """ Run the program till a certain time is reached """
+        while run_time > self._server.getTime():
+            self.run()
+
+        if self._flying_now:
+          self._flightEnding()
 
     def _speedWait(self, multiple):
         self.__wait *= multiple
