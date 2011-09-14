@@ -1,18 +1,140 @@
 Installation
 ============
 
-Scripts accessing the PostGresQL database (the database that Aeros connects to)
-need to install the psycopg2 python module. This can be easily done at the
-command line by issuing the following command.
+To install, simply go to the downloaded directory and type.
 
-        easy_install psycopg2
+    python setup.py install
 
-Files
-=====
-- `examples/live_watch.py`: Watches for when a plane takes off, records data
+You may need to use root privileges (sudo) to use the above command, if your
+current user does not have access to the python installation directory.
+
+This will install the `psycopg2` and `Twisted` packages as well. If you need
+to install these manually, the easiest method is using the following command.
+
+    easy_install psycopg2 Twisted
+
+Similar to the first command, this may require root (sudo) privileges.
+
+Alternatively one can write scripts where the directory `NCARFlightMonitor` is
+in the same folder as the script.
+
+
+Basic Usage
+===========
+
+The most simple script that can be created is as follows.
+
+    #!/usr/bin/env python
+    # encoding: utf-8
+    from NCARFlightMonitor.watch import NWatcher
+
+    watch_server = NWatcher(database="GV") ## default to using eol-rt-data.guest.ucar.edu for SQL server
+    watch_server.startWatching()
+
+This will simply listen for when the GV is in the air, spit out messages about
+missing data values when in flight, and write an ASCII file to the user's
+temporary directory containing the data from the flight in the same format as
+the ASCII files created by Aeros.
+
+Using `NWatcher(database="GV", email_fn=some_function` will use a user defied
+function with format `some_function(flight_info={}, files=[], body_msg="")`
+to email the file after each flight. More information on how to contract a
+compatible email function can be found in the package documentation.
+
+A complete list of initialization parameters and their use can be found in the package documentation.
+
+
+Adding custom data monitoring functions
+---------------------------------------
+
+The NWatcher class is designed to be easily augmented with data processing functions that provide more detailed status messages about the data being collected during a flight. To provide an explanation of how this works let's walk through the following example.
+
+
+    #!/usr/bin/env python
+    # encoding: utf-8
+    from NCARFlightMonitor.watch import NWatcher
+
+    ## Function Definitions
+    def setup_co(self):
+        """ Setup for the coraw_al calibration. """
+        ## All variables starting with `self` are persistant across process
+        ## function runs and can be called in the process function. This can
+        ## be useful for running averages and the like.
+        self.cal = False
+
+    def process_co(self, tm, data):
+        """ Process CO data """
+        coraw_al = data[0]
+
+        if coraw_al <= 8000 and self.cal == False:
+            self.log.print_msg("CO cal occuring.", tm)
+            self.cal = True
+        ## Reset so that the log message does not appear thousands of times.
+        elif coraw_al > 8000 and self.cal == True:
+            self.cal = False
+
+
+    def setup_lost_satcom(self):
+        """
+        Setup for determining satcom interruptions. Requires a certain number
+        of missing data points in order to declare satcom as offline.
+        """
+        self.lost_count = 0
+        self.lost_limit = 4
+
+    def process_lost_satcom(self, tm, data):
+        """ Have we lost satcom?  """
+        if data is None:
+            self.lost_count += 1
+            if self.lost_count == self.lost_limit:
+                self.log.print_msg("Satcom interruption", tm)
+        elif data is not None:
+            if self.lost_count >= self.lost_limit:
+                self.log.print_msg("Satcom returned", tm)
+            self.lost_count = 0
+
+
+    ## Main
+    watch_server = NWatcher(database="GV")
+
+    watch_server.attachAlgo(variables=('coraw_al',),
+                            start_fn=functions.setup_co,
+                            process_fn=functions.process_co,
+                            description="CO raw cal checker")
+
+    watch_server.attachAlgo(variables=('coraw_al',),
+                            start_fn=functions.setup_lost_satcom,
+                            process_fn=functions.process_lost_satcom,
+                            run_mode="every update",
+                            description="Satcom loss indicator")
+
+    watch_server.startWatching()
+
+
+Sample Flights
+==============
+
+All sample flight ASCII files are in the `samples/` directory.
+
+
+- `HIPPO-5-rf02-2011_08_11-21_49_04.asc`:
+
+- `HIPPO-5-rf05-2011_08_20-03_34_52.asc`:
+
+- `HIPPO-5-rf05-rf06-combined.asc`:
+
+- `HIPPO-5-rf06-2011_08_24-01_09_09.asc`:
+
+- `ICE-T-rf12-2011_07_30-19_38_00.asc`:
+
+
+Example Scripts
+===============
+
+All example programs are in the `examples/` directory.
+
+
+- `cli_monitor.py`: Watches for when a plane takes off, records data
   from the flight, and watches for data integrity.
-- `examples/bot.py`: A chatbot that is identical to `live_watch.py` but outputs
+- `bot.py`: A chatbot that is identical to `live_watch.py` but outputs
   to a IRC server instead of stdout.
-- `NcarChem/`: Module for all chem code. Does not currently include an install
-  function, hence all code that calls this module must have this directory in
-  the same location as the python script.

@@ -73,8 +73,8 @@ Features
   `NWatcher.attachAlgo()` function.
 
 - It is possible to force the program to assume the plane is always in
-  flight with NNWatcher using the `runTillTime(time, fake\_flight=True)` or
-  `runForDuration(time, fake\_time=True)`
+  flight with NNWatcher using the `runTillTime(time, fake_flight=True)` or
+  `runForDuration(time, fake_time=True)`
 
 
 Fixes
@@ -121,8 +121,8 @@ Bugs Squashed
 - Algorithms are reset each time a flight begins. This means that if an
   algorithm was trying to measure mean it would not include the data from all
   of the previous flights. Prior to this all of the global variables would
-  carry over between flights. Now at the beginning of each flight the start\_fn
-  is run again.
+  carry over between flights. Now at the beginning of each flight the
+  `start_fn` is run again.
 
 - If a given simulate time is before any time tag in the database then the
   program operates normally, it used to crash.

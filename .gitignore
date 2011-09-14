@@ -2,3 +2,6 @@
 .pass
 *.asc
 *.egg-info
+dist/
+build/
+doc/

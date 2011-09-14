@@ -30,7 +30,8 @@ import os
 if __name__ == "__main__":
     import sys
 
-    watch_server = NWatcher(database="GV")
+    watch_server = NWatcher(database="GV",
+                            email_fn=functions.sendmail)
 
     watch_server.attachAlgo(variables=('coraw_al',),
                             start_fn=functions.setup_co,
