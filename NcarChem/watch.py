@@ -202,16 +202,21 @@ class watcher(object):
         while self._num_flight < number_flights:
             self.run()
 
-    def runForDuration(self, duration):
+    def runForDuration(self, duration, fake_flight=False):
         """ Run the program for a certain duration """
+        if fake_flight:
+            self._server._fake_flying = True
         start_time = self._server.getTime()
         while duration > (self._server.getTime() - start_time):
             self.run()
 
         self._flightEnding()
 
-    def runTillTime(self, run_time):
+    def runTillTime(self, run_time, fake_flight=False):
         """ Run the program till a certain time is reached """
+        if fake_flight:
+          self._server._fake_flying = True
+
         while run_time > self._server.getTime():
             self.run()
 

@@ -55,7 +55,14 @@ class NAlgorithm(object):
         self._flight_start_time = value
 
     def run(self):
-        new_date = self._time.getTimeFromPos(-1)
+        try:
+            new_date = self._time.getTimeFromPos(-1)
+        except KeyError:
+            return
+
+        if self.last_date is None:
+            self.last_date = new_date
+
         if new_date > self.last_date:
             self.updated = True
             self._process_update()
@@ -79,8 +86,12 @@ class NAlgorithm(object):
     def reset(self):
         try:
             self.setup()
-            self._time = self.variables.getNVar(self.variables.keys()[0])
-            self.last_date = self._time.getTimeFromPos(-1)
         except Exception, e:
             print "Could not rerun setup command."
             print e
+
+        self._time = self.variables.getNVar(self.variables.keys()[0])
+        try:
+            self.last_date = self._time.getTimeFromPos(-1)
+        except KeyError, e:
+            self.last_date = None

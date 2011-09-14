@@ -132,7 +132,7 @@ class NDatabaseLiveUpdater(object):
 
     def __init__(self, server=None, variables=None):
         self.server = server
-        self._last_update_time = None
+        self._last_update_time = server.getTime()
 
         ## Get all the variables is they are not specified
         if variables is None:
@@ -142,7 +142,8 @@ class NDatabaseLiveUpdater(object):
             self._vars = variables
 
         current_time = server.getData(number_entries=1)
-        self._last_update_time = current_time[0][0]
+        if current_time is None:
+          self._last_update_time = current_time[0][0]
 
     def update(self):
         """
@@ -199,6 +200,7 @@ class NDatabase(object):
                                else False)
 
         self._flying = False
+        self._fake_flying = False
 
         ## Error Checking
         if database is None:
@@ -301,32 +303,36 @@ class NDatabase(object):
           \phi_s and \lambda_s are latitude, longitude of first point
           \phi_f and \lambda_f are latitude, longitude of second point
         """
-        speed = 0
-        data = (self.getData(number_entries=1, variables=('tasx',)))
-        if len(data) != 0:
-            speed = data[0][1]
-        else:
-            return self._flying
 
-        if speed == self._bad_data_values['TASX']:
-            speed = self._gps_speed()
-
-        if speed == self._bad_data_values['TASX']:
-            return self._flying
-
-        if speed > 50:
-            if self._flying == False:
-                cursor = self._conn.cursor()
-                try:
-                    cursor.execute("SELECT * FROM global_attributes;")
-                    self._flight_info = dict(cursor.fetchall())
-                except Exception:
-                    print "Could not update flight information variable."
-                self._flying = True
+        if self._fake_flying:
             return True
         else:
-            self._flying = False
-            return False
+            speed = 0
+            data = (self.getData(number_entries=1, variables=('tasx',)))
+            if len(data) != 0:
+                speed = data[0][1]
+            else:
+                return self._flying
+
+            if speed == self._bad_data_values['TASX']:
+                speed = self._gps_speed()
+
+            if speed == self._bad_data_values['TASX']:
+                return self._flying
+
+            if speed > 50:
+                if self._flying == False:
+                    cursor = self._conn.cursor()
+                    try:
+                        cursor.execute("SELECT * FROM global_attributes;")
+                        self._flight_info = dict(cursor.fetchall())
+                    except Exception:
+                        print "Could not update flight information variable."
+                    self._flying = True
+                return True
+            else:
+                self._flying = False
+                return False
 
     def _gps_speed(self):
         data = (self.getData(number_entries=2, variables=('gglat', 'gglon')))
