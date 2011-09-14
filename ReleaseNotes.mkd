@@ -6,15 +6,15 @@ Features
 - NVar and NVarSet can now get data from slices that use either integer or
   datetime indices.
 
-  For example, one can get all of the slices from a certain time `last_upate`
-  by doing `NVarSet[last_update:]`, which returns a list of tuples who have the
-  order of `NVarSet.labels`. To get a list that includes datetime variables,
-  use `NVarSet.sliceWithTime([start=None], stop)` or
-  `NVar.sliceWithTime([start=None], stop)`, which works in a way similar to
-  regular slices (so negative integers allowed, only one value sets only the
-  stop value). Note that for these functions, when called with one value, set
-  only the stop index, and when called with two, set start to the first and
-  stop to the second value.
+    For example, one can get all of the slices from a certain time
+    `last_upate` by doing `NVarSet[last_update:]`, which returns a list of
+    tuples who have the order of `NVarSet.labels`. To get a list that includes
+    datetime variables, use `NVarSet.sliceWithTime([start=None], stop)` or
+    `NVar.sliceWithTime([start=None], stop)`, which works in a way similar to
+    regular slices (so negative integers allowed, only one value sets only the
+    stop value). Note that for these functions, when called with one value,
+    set only the stop index, and when called with two, set start to the first
+    and stop to the second value.
 
 - Slices can include datetime using the function `sliceWithTime([start=Beginning], stop)`.
 
@@ -104,20 +104,26 @@ Fixes
   server.
 
 - Renamed watcher to NNWatcher
+
 - Renamed entire package to NCARFlightMonitor
+
 - PEP8 compliant
 
 Bugs Squashed
 -------------
 - OS/filesystem independent NWatcher class file output.
+
 - Update flight information in NDatabase object when a new flight is detected,
   previously only got this data on the object's creatiob
+
 - Can load .asc files with blank lines in them.
+
 - Algorithms are reset each time a flight begins. This means that if an
   algorithm was trying to measure mean it would not include the data from all
   of the previous flights. Prior to this all of the global variables would
   carry over between flights. Now at the beginning of each flight the start\_fn
   is run again.
+
 - If a given simulate time is before any time tag in the database then the
   program operates normally, it used to crash.
 
