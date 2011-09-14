@@ -34,6 +34,9 @@ Features
 
 - NWatcher class can now run n times with `runNumFlights(n)`.
 
+- It is possible to run the NWatcher class for a certain duration
+  (`runForDuration`) or till a certain time is reached (`runTillTime`)
+
 - If `variables` option in NWatcher instantiation is not set (or in
   database.NDatabaseLiveUpdater) then all variables from the server are
   captured.
@@ -64,17 +67,14 @@ Features
 - Header for text files is optional through NWatcher instantiation option
   `header=True/False`, defaults to False.
 
-- It is possible to run the NWatcher class for a certain duration
-  (runForDuration) or till a certain time is reached (runTillTime)
-
 - Algorithms can now be set to run every time an attempt for a data update
   is performed. This allows one to determine when satcom is out and alter an
-  algorithm explicitly. Set with run\_time="every update" when calling the
-  NWatcher.attachAlgo() function.
+  algorithm explicitly. Set with `run_time="every update"` when calling the
+  `NWatcher.attachAlgo()` function.
 
 - It is possible to force the program to assume the plane is always in
-  flight with NNWatcher using the runTillTime(time, fake\_flight=True) or
-  runForDuration(time, fake\_time=True)
+  flight with NNWatcher using the `runTillTime(time, fake\_flight=True)` or
+  `runForDuration(time, fake\_time=True)`
 
 
 Fixes
