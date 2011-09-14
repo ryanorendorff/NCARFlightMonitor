@@ -49,21 +49,18 @@ Adding custom data monitoring functions
 
 The NWatcher class is designed to be easily augmented with data processing functions that provide more detailed status messages about the data being collected during a flight. To provide an explanation of how this works let's walk through the following example.
 
-
     #!/usr/bin/env python
     # encoding: utf-8
     from NCARFlightMonitor.watch import NWatcher
 
     ## Function Definitions
     def setup_co(self):
-        """ Setup for the coraw_al calibration. """
         ## All variables starting with `self` are persistant across process
         ## function runs and can be called in the process function. This can
         ## be useful for running averages and the like.
         self.cal = False
 
     def process_co(self, tm, data):
-        """ Process CO data """
         coraw_al = data[0]
 
         if coraw_al <= 8000 and self.cal == False:
@@ -73,27 +70,6 @@ The NWatcher class is designed to be easily augmented with data processing funct
         elif coraw_al > 8000 and self.cal == True:
             self.cal = False
 
-
-    def setup_lost_satcom(self):
-        """
-        Setup for determining satcom interruptions. Requires a certain number
-        of missing data points in order to declare satcom as offline.
-        """
-        self.lost_count = 0
-        self.lost_limit = 4
-
-    def process_lost_satcom(self, tm, data):
-        """ Have we lost satcom?  """
-        if data is None:
-            self.lost_count += 1
-            if self.lost_count == self.lost_limit:
-                self.log.print_msg("Satcom interruption", tm)
-        elif data is not None:
-            if self.lost_count >= self.lost_limit:
-                self.log.print_msg("Satcom returned", tm)
-            self.lost_count = 0
-
-
     ## Main
     watch_server = NWatcher(database="GV")
 
@@ -101,12 +77,6 @@ The NWatcher class is designed to be easily augmented with data processing funct
                             start_fn=functions.setup_co,
                             process_fn=functions.process_co,
                             description="CO raw cal checker")
-
-    watch_server.attachAlgo(variables=('coraw_al',),
-                            start_fn=functions.setup_lost_satcom,
-                            process_fn=functions.process_lost_satcom,
-                            run_mode="every update",
-                            description="Satcom loss indicator")
 
     watch_server.startWatching()
 
@@ -117,15 +87,26 @@ Sample Flights
 All sample flight ASCII files are in the `samples/` directory.
 
 
-- `HIPPO-5-rf02-2011_08_11-21_49_04.asc`:
+- `HIPPO-5-rf02-2011_08_11-21_49_04.asc`: HIPPO 5 Research Flight 02 on the
+  GV. Provides a sample where nothing has occurred abnormally (such as GPS
+  going out, losing satcom, etc).
 
-- `HIPPO-5-rf05-2011_08_20-03_34_52.asc`:
+- `HIPPO-5-rf05-2011_08_20-03_34_52.asc`: HIPPO 5 Research Flight 05 on the
+  GV. This flight was over the arctic, and hence satcom was lost for the
+  magority of the flight (in one chunk).
 
-- `HIPPO-5-rf05-rf06-combined.asc`:
+- `HIPPO-5-rf05-rf06-combined.asc`: HIPPO 5 Research Flights 05 and 06 on the
+  GV, with the times on 06 reduced by two days to make wait times inbetween
+  flights when in simulation mode shorter. This provides an opportunity to
+  test the entire package in a continuous monitoring setting ('daemon' mode)
+  across multiple flights.
 
-- `HIPPO-5-rf06-2011_08_24-01_09_09.asc`:
+- `HIPPO-5-rf06-2011_08_24-01_09_09.asc`: HIPPO 5 Research Flight 06 on the
+  GV. In this case, the TASX flight speed variable is unavailable for a period
+  of time. This provides an example of calculating flight speed from GPS.
 
-- `ICE-T-rf12-2011_07_30-19_38_00.asc`:
+- `ICE-T-rf12-2011_07_30-19_38_00.asc`: ICE-T Research Flight 12 on the C130.
+  This has a different instrumentation set.
 
 
 Example Scripts
@@ -137,4 +118,4 @@ All example programs are in the `examples/` directory.
 - `cli_monitor.py`: Watches for when a plane takes off, records data
   from the flight, and watches for data integrity.
 - `bot.py`: A chatbot that is identical to `live_watch.py` but outputs
-  to a IRC server instead of stdout.
+  to a IRC server as well as the command line.
