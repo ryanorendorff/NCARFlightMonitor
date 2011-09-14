@@ -1,3 +1,4 @@
 *.pyc
 .pass
 *.asc
+*.egg-info

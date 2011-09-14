@@ -23,16 +23,16 @@ Features
   `new_nvar` is not part of whatever NVarSet that NVar1 or NVar2 was attached
   to.
 - Algorithms have access to flight start time.
-- Variables attached to watcher class are now checked for the missing data flag
+- Variables attached to NWatcher class are now checked for the missing data flag
   automatically.
-- File output can be redirected from watcher class by specifying
+- File output can be redirected from NWatcher class by specifying
   `output_file_path` when instantiating the class.
-- watcher class can now run n times with `runNumFlights(n)`.
-- If `variables` option in watcher instantiation is not set (or in
+- NWatcher class can now run n times with `runNumFlights(n)`.
+- If `variables` option in NWatcher instantiation is not set (or in
   database.NDatabaseLiveUpdater) then all variables from the server are
   captured.
 - Algorithms are run for each flight. This allows one to keep an instance of a
-  watcher class running all of the time and monitor only those instruments that
+  NWatcher class running all of the time and monitor only those instruments that
   are on the aircraft during the flight. All algorithms that "fail" for reasons
   such as the variable name does not exist are removed from the algorithms run
   during that flight but will be reinstated for the next flight.
@@ -43,21 +43,21 @@ Features
 - Algorithms can have descriptions that make it easier to find problems during
   debugging.
 - Informational messages are logged and can be put in emails, replayed to IRC
-  users, or others (through `watcher.log.messages`).
-- Can specify a special print function for a watcher class (during
+  users, or others (through `NWatcher.log.messages`).
+- Can specify a special print function for a NWatcher class (during
   instantiation) through `print_msg_fn`.
-- Watcher class can output to a specific file instead of the temp directory
+- NWatcher class can output to a specific file instead of the temp directory
   with `output_file_path` option during instantiation
-- Header for text files is optional through watcher instantiation option
+- Header for text files is optional through NWatcher instantiation option
   `header=True/False`, defaults to False.
-- It is possible to run the watcher class for a certain duration
+- It is possible to run the NWatcher class for a certain duration
   (runForDuration) or till a certain time is reached (runTillTime)
 - Algorithms can now be set to run every time an attempt for a data update
   is performed. This allows one to determine when satcom is out and alter an
   algorithm explicitly. Set with run\_time="every update" when calling the
-  watcher.attachAlgo() function.
+  NWatcher.attachAlgo() function.
 - It is possible to force the program to assume the plane is always in
-  flight with NWatcher using the runTillTime(time, fake\_flight=True) or
+  flight with NNWatcher using the runTillTime(time, fake\_flight=True) or
   runForDuration(time, fake\_time=True)
 
 
@@ -69,7 +69,7 @@ Fixes
 - Attached algorithms are passed only the most recent data point and a string
   timestamp in the form `process(time_stamp, data)`, previously this had to be
   done by hand.
-- watcher class now uses server time for all notices (before it would use the
+- NWatcher class now uses server time for all notices (before it would use the
   local computers UTC time when out of flight and at the very beginning of a
   flight, for status messages only).
 - Error messages now output the class that they came from.
@@ -79,12 +79,12 @@ Fixes
   from the first cal.
 - Mail function moved out of code because it is highly variable based on mail
   server.
-- Renamed watcher to NWatcher
+- Renamed watcher to NNWatcher
 - PEP8 compliant
 
 Bugs Squashed
 -------------
-- OS/filesystem independent watcher class file output.
+- OS/filesystem independent NWatcher class file output.
 - Update flight information in NDatabase object when a new flight is detected,
   previously only got this data on the object's creatiob
 - Can load .asc files with blank lines in them.

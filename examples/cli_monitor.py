@@ -16,7 +16,7 @@
 ## --------------------------------------------------------------------------
 ## Imports and Globals
 ## --------------------------------------------------------------------------
-from NcarChem.watch import NWatcher
+from NCARFlightMonitor.watch import NWatcher
 import datetime
 import functions
 
