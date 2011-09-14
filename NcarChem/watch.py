@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-## Contains the watcher class that combines all of the other parts of the
+## Contains the NWatcher class that combines all of the other parts of the
 ## package together into a coherent and easy to use flight tracker. This class
 ## can be used in a stand alone manner in its own application or attached to
 ## another process like an IRC chat bot.
@@ -13,7 +13,7 @@
 ## directly. A emailing function can be attached to the class to email this
 ## file to desired recipients.
 ##
-## The watcher class supports the ability for arbitrary real time data
+## The NWatcher class supports the ability for arbitrary real time data
 ## processing algorithms to be attached to the class, where each time point
 ## is passed to the algorithm one at a time and in order. Default algorithms
 ## check for bad data flags and if a variable is inside bounds (although the
@@ -85,7 +85,7 @@ def output_file_str(flight_info):
 ## --------------------------------------------------------------------------
 ## Classes
 ## --------------------------------------------------------------------------
-class logger(object):
+class Logger(object):
     def __init__(self, print_msg_fn=None):
         self.messages = []
         if print_msg_fn is None:
@@ -113,7 +113,7 @@ class logger(object):
         return formatted_msg
 
 
-class watcher(object):
+class NWatcher(object):
     """
     A class designed to watch a server to see when an aircraft is in flight.
     When in flight, real time data is collected and analysed to ensure
@@ -278,7 +278,7 @@ class watcher(object):
         self._flight_end_time = None
         self._flying_now = True
         self._waiting = False
-        self.log = logger(self.__print_msg_fn)
+        self.log = Logger(self.__print_msg_fn)
         ##    Get preflight data
         self._variables = self._resetVariables(self.__input_variables)
         self._variables.addData(self._server.getData(start_time="-60 MINUTE",

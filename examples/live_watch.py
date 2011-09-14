@@ -16,7 +16,7 @@
 ## --------------------------------------------------------------------------
 ## Imports and Globals
 ## --------------------------------------------------------------------------
-from NcarChem.watch import watcher
+from NcarChem.watch import NWatcher
 import datetime
 import functions
 
@@ -30,7 +30,7 @@ import os
 if __name__ == "__main__":
     import sys
 
-    watch_server = watcher(database="GV")
+    watch_server = NWatcher(database="GV")
 
     watch_server.attachAlgo(variables=('coraw_al',),
                             start_fn=functions.setup_co,

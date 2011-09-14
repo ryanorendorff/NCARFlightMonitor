@@ -55,11 +55,13 @@ class NAlgorithm(object):
         self._flight_start_time = value
 
     def run(self):
+        ## In case we start the server before any values are in it.
         try:
             new_date = self._time.getTimeFromPos(-1)
         except KeyError:
             return
 
+        ## In case we start the server before any values are in it.
         if self.last_date is None:
             self.last_date = new_date
 
