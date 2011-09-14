@@ -1,4 +1,4 @@
-v0.02 (soon 04/09/11 03:35:11) - Ryan Orendorff <ryano@ucar.edu>
+v0.02 (soon 14/09/11 03:50:49) - Ryan Orendorff <ryano@ucar.edu>
 ==========================================
 
 Features
@@ -50,6 +50,15 @@ Features
   with `output_file_path` option during instantiation
 - Header for text files is optional through watcher instantiation option
   `header=True/False`, defaults to False.
+- It is possible to run the watcher class for a certain duration
+  (runForDuration) or till a certain time is reached (runTillTime)
+- Algorithms can now be set to run every time an attempt for a data update
+  is performed. This allows one to determine when satcom is out and alter an
+  algorithm explicitly. Set with run\_time="every update" when calling the
+  watcher.attachAlgo() function.
+- It is possible to force the program to assume the plane is always in
+  flight with NWatcher using the runTillTime(time, fake\_flight=True) or
+  runForDuration(time, fake\_time=True)
 
 
 Fixes
@@ -70,6 +79,7 @@ Fixes
   from the first cal.
 - Mail function moved out of code because it is highly variable based on mail
   server.
+- Renamed watcher to NWatcher
 - PEP8 compliant
 
 Bugs Squashed
@@ -83,6 +93,8 @@ Bugs Squashed
   of the previous flights. Prior to this all of the global variables would
   carry over between flights. Now at the beginning of each flight the start\_fn
   is run again.
+- If a given simulate time is before any time tag in the database then the
+  program operates normally, it used to crash.
 
 
 v0.01 (10/08/11 19:09:06) - Ryan Orendorff <ryano@ucar.edu>
