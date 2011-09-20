@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+## Copyright 2011 Ryan Orendorff, NCAR under GPLv3
+## See README.mkd for more details.
+
 ## Sample functions to use with the NcarChem.watcher class
 ##
 ## Author: Ryan Orendorff <ryano@ucar.edu>

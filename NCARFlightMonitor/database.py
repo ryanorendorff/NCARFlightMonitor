@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+## Copyright 2011 Ryan Orendorff, NCAR under GPLv3
+## See README.mkd for more details.
+
 ## Connect to EOL Real time databases. Additional functions for determining
 ## if the plane is in flight are available.
 ##

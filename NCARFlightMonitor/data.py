@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+## Copyright 2011 Ryan Orendorff, NCAR under GPLv3
+## See README.mkd for more details.
+
 ## Objects designed to hold data from the EOL PSQL live repository. The
 ## NVar class is designed to hold one varibles information, in the order it
 ## was added to the object, and along with a timestamp for the data.

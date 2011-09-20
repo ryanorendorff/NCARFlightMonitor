@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+## Copyright 2011 Ryan Orendorff, NCAR under GPLv3
+## See README.mkd for more details.
+
 ## Record variables during flights of a particular airplane, and place
 ## these in an ascii file in the system's temp directory after a flight.
 ## Additionally informational messages about the flight are created for bad

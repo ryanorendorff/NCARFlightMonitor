@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+## Copyright 2011 Ryan Orendorff, NCAR under GPLv3
+## See README.mkd for more details.
+
 ## A bot that outputs the wather class' informational messages to an IRC
 ## channel.
 ##

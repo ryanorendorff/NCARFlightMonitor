@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+## Copyright 2011 Ryan Orendorff, NCAR under GPLv3
+## See README.mkd for more details.
+
 ## The shell that holds the algorithms that are attached to a watcher object.
 ## These objects are not designed to be used for purposes other than the real
 ## time analysis through the watcher class.

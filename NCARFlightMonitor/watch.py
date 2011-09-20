@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+## Copyright 2011 Ryan Orendorff, NCAR under GPLv3
+## See README.mkd for more details.
+
 ## Contains the NWatcher class that combines all of the other parts of the
 ## package together into a coherent and easy to use flight tracker. This class
 ## can be used in a stand alone manner in its own application or attached to
