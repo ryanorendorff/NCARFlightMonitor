@@ -21,9 +21,6 @@ import data
 ## PostGreSQL module, http://www.initd.org/psycopg/
 import psycopg2
 
-## Allows for multiple child processes off one parent program.
-from multiprocessing.managers import BaseManager
-
 ## Time imports
 import datetime
 import time
@@ -119,13 +116,6 @@ def _loadFile(file_path, dbname, host, user, password, dbstart):
 ## --------------------------------------------------------------------------
 
 
-class NDatabaseManager(BaseManager):
-    """
-    Used for multiprocess purposes.
-    """
-    pass
-
-
 class NDatabaseLiveUpdater(object):
     """
     Used to update the data inside an NVarSet with the newest data from the
@@ -146,7 +136,7 @@ class NDatabaseLiveUpdater(object):
 
         current_time = server.getData(number_entries=1)
         if current_time is None:
-          self._last_update_time = current_time[0][0]
+            self._last_update_time = current_time[0][0]
 
     def update(self):
         """

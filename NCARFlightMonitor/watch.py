@@ -46,7 +46,7 @@
 ## --------------------------------------------------------------------------
 
 ## Server Imports
-from database import NDatabaseLiveUpdater, NDatabaseManager, NDatabase
+from database import NDatabaseLiveUpdater, NDatabase
 ## ASCII file imports
 from datafile import NRTFile
 ## Internal Python Ordered Dictionary data structures
