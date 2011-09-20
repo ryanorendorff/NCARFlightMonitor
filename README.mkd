@@ -51,13 +51,13 @@ The most simple python script using the NCARFlightMonitor package is as
 follows.
 
 ```python
-    #!/usr/bin/env python
-    # encoding: utf-8
-    from NCARFlightMonitor.watch import NWatcher
+#!/usr/bin/env python
+# encoding: utf-8
+from NCARFlightMonitor.watch import NWatcher
 
-    ## default to using eol-rt-data.guest.ucar.edu for SQL server
-    watch_server = NWatcher(database="GV")
-    watch_server.startWatching()
+## default to using eol-rt-data.guest.ucar.edu for SQL server
+watch_server = NWatcher(database="GV")
+watch_server.startWatching()
 ```
 
 This will listen for when the GV is in the air, spit out messages to standard
@@ -82,36 +82,38 @@ functions that provide more detailed status messages about the data being
 collected during flight. To delve into how this paradigm works, let's walk
 through the following example.
 
-    #!/usr/bin/env python
-    # encoding: utf-8
-    from NCARFlightMonitor.watch import NWatcher                          # (1)
+```python
+#!/usr/bin/env python
+# encoding: utf-8
+from NCARFlightMonitor.watch import NWatcher                          # (1)
 
-    ## Function Definitions
-    def setup_co(self):                                                   # (2)
-        ## All variables starting with `self` are persistant across process
-        ## function runs and can be called in the process function. This can
-        ## be useful for running averages and the like.
+## Function Definitions
+def setup_co(self):                                                   # (2)
+    ## All variables starting with `self` are persistant across process
+    ## function runs and can be called in the process function. This can
+    ## be useful for running averages and the like.
+    self.cal = False
+
+def process_co(self, tm, data):                                       # (3)
+    coraw_al = data[0]
+
+    if coraw_al <= 8000 and self.cal == False:
+        self.log.print_msg("CO cal occuring.", tm)
+        self.cal = True
+    ## Reset so that the log message does not appear thousands of times.
+    elif coraw_al > 8000 and self.cal == True:
         self.cal = False
 
-    def process_co(self, tm, data):                                       # (3)
-        coraw_al = data[0]
+## Main
+watch_server = NWatcher(database="GV")                                # (4)
 
-        if coraw_al <= 8000 and self.cal == False:
-            self.log.print_msg("CO cal occuring.", tm)
-            self.cal = True
-        ## Reset so that the log message does not appear thousands of times.
-        elif coraw_al > 8000 and self.cal == True:
-            self.cal = False
+watch_server.attachAlgo(variables=('coraw_al',),                      # (5)
+                        start_fn=setup_co,
+                        process_fn=process_co,
+                        description="CO raw cal checker")
 
-    ## Main
-    watch_server = NWatcher(database="GV")                                # (4)
-
-    watch_server.attachAlgo(variables=('coraw_al',),                      # (5)
-                            start_fn=setup_co,
-                            process_fn=process_co,
-                            description="CO raw cal checker")
-
-    watch_server.startWatching()                                          # (6)
+watch_server.startWatching()                                          # (6)
+```
 
 This program has most of the same structure as the basic example (1, 4, 6).
 The added sections show how one can add a function to monitor the coraw\_al
