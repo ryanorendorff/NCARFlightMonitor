@@ -1,20 +1,45 @@
+NCARFlightMonitor is a python package designed to make creating real time
+data monitoring programs for the EOL/NCAR aircraft simple to write and robust
+against failures of the real time database and programming syntax errors.
+NCARFlightMonitor's design is similar to the Processing/Wiring programming
+languages.
+
 Installation
 ============
 
+This is a python package. It can be used in the following ways.
+
+System wide (Recommended)
+-------------------------
 To install, simply go to the downloaded directory and type.
 
     python setup.py install
 
-You may need to use root privileges (sudo) to use the above command, if your
+You may need to have root privileges (sudo) to use the above command, if your
 current user does not have access to the python installation directory.
 
-This will install the `psycopg2` and `Twisted` packages as well. If you need
-to install these manually, the easiest method is using the following command.
+The install command above will also install the `psycopg2` and `Twisted`
+python packages. If an error occurs and these packages cannot be installed
+through the setup.py script then the following command will install the
+packages manually.
 
     easy_install psycopg2 Twisted
 
 Similar to the first command, this may require root (sudo) privileges.
 
+
+Temporarily system wide
+-----------------------
+To install the package temporarily (useful when modifying the package)
+
+    python setup.py develop
+
+This carries the same privilege issues as the system wide install; see above
+method.
+
+
+In Present Working Directory
+----------------------------
 Alternatively one can write scripts where the directory `NCARFlightMonitor` is
 in the same folder as the script.
 
@@ -22,23 +47,25 @@ in the same folder as the script.
 Basic Usage
 ===========
 
-The most simple script that can be created is as follows.
+The most simple python script using the NCARFlightMonitor package is as
+follows.
 
     #!/usr/bin/env python
     # encoding: utf-8
     from NCARFlightMonitor.watch import NWatcher
 
-    watch_server = NWatcher(database="GV") ## default to using eol-rt-data.guest.ucar.edu for SQL server
+    ## default to using eol-rt-data.guest.ucar.edu for SQL server
+    watch_server = NWatcher(database="GV")
     watch_server.startWatching()
 
-This will simply listen for when the GV is in the air, spit out messages about
-missing data values when in flight, and write an ASCII file to the user's
-temporary directory containing the data from the flight in the same format as
-the ASCII files created by Aeros.
+This will listen for when the GV is in the air, spit out messages to standard
+out about missing data values when in flight, and write an ASCII file to the
+user's temporary directory containing the data from the flight (in the same
+format as the ASCII files created by Aeros).
 
 Using `NWatcher(database="GV", email_fn=some_function` will use a user defied
-function with format `some_function(flight_info={}, files=[], body_msg="")`
-to email the file after each flight. More information on how to contract a
+function with format `some_function(flight_info={}, files=[], body_msg="")` to
+email the file after each flight. More information on how to construct a
 compatible email function can be found in the package documentation.
 
 A complete list of initialization parameters and their use can be found in the
@@ -50,8 +77,8 @@ Adding custom data monitoring functions
 
 The NWatcher class is designed to be easily augmented with data processing
 functions that provide more detailed status messages about the data being
-collected during a flight. To provide an explanation of how this works let's
-walk through the following example.
+collected during flight. To delve into how this paradigm works, let's walk
+through the following example.
 
     #!/usr/bin/env python
     # encoding: utf-8
@@ -78,16 +105,18 @@ walk through the following example.
     watch_server = NWatcher(database="GV")                                # (4)
 
     watch_server.attachAlgo(variables=('coraw_al',),                      # (5)
-                            start_fn=functions.setup_co,
-                            process_fn=functions.process_co,
+                            start_fn=setup_co,
+                            process_fn=process_co,
                             description="CO raw cal checker")
 
     watch_server.startWatching()                                          # (6)
 
 This program has most of the same structure as the basic example (1, 4, 6).
 The added sections show how one can add a function to monitor the coraw\_al
-value to determine if it's value drops below 8000. This is done through (5),
-which runs defined functions against the real time data as acquired.
+value to determine if it's value drops below 8000, and if so print a message
+to standard out. The algorithm to do this below 800 check (2,3) is attached
+through (5), which will set up the attached algorithm (3) to be run against
+the real time data as it is acquired from the aircraft.
 
 The setup of (5) is relatively simple.
 
@@ -95,20 +124,20 @@ The setup of (5) is relatively simple.
   the attached algorithm. In this case, the attached algorithm only analyses
   the coraw\_al variable.
 
-  - start\_fn (2): a function that is run only once before any data is collected.
-  All variables that are in the form `self.variable_name` are accessible in
-  the process function each time it is run. These variables can be through
-  of as global variables for the associated process function. The function
-  definition must be in the same format (where the keyword `self` is the only
-  function argument).
+  - start\_fn (2): a function that is run only once before any data is
+  collected.  All variables that are in the form `self.variable_name` are
+  accessible in the process function each time it is run. These variables can
+  be through of as global variables for the associated process function. The
+  function definition must be in the same format (where the keyword `self` is
+  the only function argument).
 
     Additionally there is a variable called `self._flight_start_time` that
     provides the start time of the current flight, as a datetime.datetime
     variable.
 
-  - process\_fn (3): a function that is run each time new data is acquired,
-  where `tm` is a datetime.datetime object equal to the time stamp for
-  the data, and `data` is a list of data values, ordered by order of the
+  - process\_fn (3): a function that is run every time new data is acquired,
+  where `tm` is a datetime.datetime object equal to the time stamp for the
+  data, and `data` is a list of data values, ordered by order of the
   `variables` argument's tuple. For example, if `variables=('var1', 'var2')`,
   then data is `[var1, var2]`. This function will not run when there is no new
   data (sat com loss).
@@ -125,6 +154,29 @@ The setup of (5) is relatively simple.
   optional, but will assist in debugging the attached algorithm if something
   goes awry.
 
+Running the example against the `HIPPO5_rf05` sample file produces the
+following output (assuming the program started on 2011-08-19 18:00:00Z).
+Notice that bad data checks are automatically added by the package.
+
+    [2011-08-19 18:00:00Z] Waiting for flight.
+    [2011-08-19 18:05:00Z] In Flight.
+    [2011-08-19 18:05:03Z] co2_qlive MISSING DATA
+    [2011-08-19 18:19:23Z] ch4_qlive MISSING DATA
+    [2011-08-19 18:19:23Z] co_qlive MISSING DATA
+    [2011-08-19 19:03:23Z] CO cal occuring.
+    [2011-08-19 19:47:03Z] ch4_qlive no longer has missing data
+    [2011-08-19 19:47:03Z] co_qlive no longer has missing data
+    [2011-08-19 20:06:13Z] CO cal occuring.
+    [2011-08-19 21:09:03Z] CO cal occuring.
+    [2011-08-20 00:17:33Z] CO cal occuring.
+    [2011-08-20 01:20:23Z] CO cal occuring.
+    [2011-08-20 02:23:13Z] CO cal occuring.
+    [2011-08-20 02:37:30Z] Flight ending.
+    [2011-08-20 02:39:35Z] Outputting file to /var/folders/dw/v6_mfm_j175f4l7n11rn44nm0000gn/T/HIPPO-5-rf05-2011_09_20-05_40_26.asc
+    [2011-08-20 02:39:35Z] Waiting for flight.
+
+The program will continue until it receives a kill command (CTRL-C on \*nix).
+
 More information can be found in the documentation.
 
 
@@ -132,7 +184,6 @@ Sample Flights
 ==============
 
 All sample flight ASCII files are in the `samples/` directory.
-
 
 - `HIPPO-5-rf02-2011_08_11-21_49_04.asc`: HIPPO 5 Research Flight 02 on the
   GV. Provides a sample where nothing has occurred abnormally (such as GPS
@@ -161,11 +212,14 @@ Example Scripts
 
 All example programs are in the `examples/` directory.
 
+- `bot.py`: A chatbot that is identical to `live_watch.py` but outputs to a
+  IRC server as well as the command line.
+- `cli_monitor.py`: Watches for when a plane takes off, records data from the
+  flight, and watches for data integrity.
+- `load_file.py`: A program to load the sample files into a PSQL repository
+- `simulate.py`: A version of the program in README.mkd that runs against a
+  database from a simulated start time, and for one flight only.
 
-- `cli_monitor.py`: Watches for when a plane takes off, records data
-  from the flight, and watches for data integrity.
-- `bot.py`: A chatbot that is identical to `live_watch.py` but outputs
-  to a IRC server as well as the command line.
 
 License
 =======
