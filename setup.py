@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name="NCAR Flight Monitor",
-      version='0.2',
+      version='0.02',
       description='Monitor in flight data for RAF field projects in real time.',
       author='Ryan Orendorff',
       author_email='ryan@rdodesigns.com',
