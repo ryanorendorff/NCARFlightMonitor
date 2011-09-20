@@ -41,26 +41,30 @@ function with format `some_function(flight_info={}, files=[], body_msg="")`
 to email the file after each flight. More information on how to contract a
 compatible email function can be found in the package documentation.
 
-A complete list of initialization parameters and their use can be found in the package documentation.
+A complete list of initialization parameters and their use can be found in the
+package documentation.
 
 
 Adding custom data monitoring functions
 ---------------------------------------
 
-The NWatcher class is designed to be easily augmented with data processing functions that provide more detailed status messages about the data being collected during a flight. To provide an explanation of how this works let's walk through the following example.
+The NWatcher class is designed to be easily augmented with data processing
+functions that provide more detailed status messages about the data being
+collected during a flight. To provide an explanation of how this works let's
+walk through the following example.
 
     #!/usr/bin/env python
     # encoding: utf-8
-    from NCARFlightMonitor.watch import NWatcher
+    from NCARFlightMonitor.watch import NWatcher                          # (1)
 
     ## Function Definitions
-    def setup_co(self):
+    def setup_co(self):                                                   # (2)
         ## All variables starting with `self` are persistant across process
         ## function runs and can be called in the process function. This can
         ## be useful for running averages and the like.
         self.cal = False
 
-    def process_co(self, tm, data):
+    def process_co(self, tm, data):                                       # (3)
         coraw_al = data[0]
 
         if coraw_al <= 8000 and self.cal == False:
@@ -71,14 +75,57 @@ The NWatcher class is designed to be easily augmented with data processing funct
             self.cal = False
 
     ## Main
-    watch_server = NWatcher(database="GV")
+    watch_server = NWatcher(database="GV")                                # (4)
 
-    watch_server.attachAlgo(variables=('coraw_al',),
+    watch_server.attachAlgo(variables=('coraw_al',),                      # (5)
                             start_fn=functions.setup_co,
                             process_fn=functions.process_co,
                             description="CO raw cal checker")
 
-    watch_server.startWatching()
+    watch_server.startWatching()                                          # (6)
+
+This program has most of the same structure as the basic example (1, 4, 6).
+The added sections show how one can add a function to monitor the coraw\_al
+value to determine if it's value drops below 8000. This is done through (5),
+which runs defined functions against the real time data as acquired.
+
+The setup of (5) is relatively simple.
+
+  - variables: tuple string list of variable names that are to be analysed in
+  the attached algorithm. In this case, the attached algorithm only analyses
+  the coraw\_al variable.
+
+  - start\_fn (2): a function that is run only once before any data is collected.
+  All variables that are in the form `self.variable_name` are accessible in
+  the process function each time it is run. These variables can be through
+  of as global variables for the associated process function. The function
+  definition must be in the same format (where the keyword `self` is the only
+  function argument).
+
+    Additionally there is a variable called `self._flight_start_time` that
+    provides the start time of the current flight, as a datetime.datetime
+    variable.
+
+  - process\_fn (3): a function that is run each time new data is acquired,
+  where `tm` is a datetime.datetime object equal to the time stamp for
+  the data, and `data` is a list of data values, ordered by order of the
+  `variables` argument's tuple. For example, if `variables=('var1', 'var2')`,
+  then data is `[var1, var2]`. This function will not run when there is no new
+  data (sat com loss).
+
+    All of the variables prefixed with `self` in the setup function are
+    availible in this function. There is an additional object `self.log` that
+    can be accessed which provides a log of information about the current
+    flight. This object's main function is self.log.print_msg(message_string,
+    timestamp), which prints the message to standard out and logs the
+    information. This information is then sent, along with a an ascii file of
+    the flight's data, at the end of the flight.
+
+  - description: A description of the algorithm, as a string. This is
+  optional, but will assist in debugging the attached algorithm if something
+  goes awry.
+
+More information can be found in the documentation.
 
 
 Sample Flights
