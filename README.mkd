@@ -49,6 +49,7 @@ Basic Usage
 
 The most simple python script using the NCARFlightMonitor package is as
 follows.
+
 ```python
     #!/usr/bin/env python
     # encoding: utf-8
@@ -58,6 +59,7 @@ follows.
     watch_server = NWatcher(database="GV")
     watch_server.startWatching()
 ```
+
 This will listen for when the GV is in the air, spit out messages to standard
 out about missing data values when in flight, and write an ASCII file to the
 user's temporary directory containing the data from the flight (in the same
