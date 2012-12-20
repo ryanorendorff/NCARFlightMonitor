@@ -68,10 +68,13 @@ format as the ASCII files created by Aeros).
 Using `NWatcher(database="GV", email_fn=some_function` will use a user defied
 function with format `some_function(flight_info={}, files=[], body_msg="")` to
 email the file after each flight. More information on how to construct a
-compatible email function can be found in the package documentation.
+compatible email function can be found in the examples, release notes, and the source code (which is relatively well documented).
 
 A complete list of initialization parameters and their use can be found in the
-package documentation.
+source code.
+
+I would eventually like to be able to create doxygen like documentation for the
+package, but have yet to have time. :-(
 
 
 Adding custom data monitoring functions
