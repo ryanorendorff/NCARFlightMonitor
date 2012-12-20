@@ -216,7 +216,7 @@ Example Scripts
 
 All example programs are in the `examples/` directory.
 
-- `bot.py`: A chatbot that is identical to `live_watch.py` but outputs to a
+- `bot.py`: A chatbot that is identical to `cli_monitor.py` but outputs to a
   IRC server as well as the command line.
 - `cli_monitor.py`: Watches for when a plane takes off, records data from the
   flight, and watches for data integrity.

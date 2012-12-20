@@ -7,7 +7,7 @@
 ## A bot that outputs the wather class' informational messages to an IRC
 ## channel.
 ##
-## IMPORTANT: Change the password on line 58 to IRC server password.
+## IMPORTANT: Change the password on line 61 to IRC server password.
 ##
 ## Author: Ryan Orendorff <ryano@ucar.edu>
 ## Date: 30/08/11 12:47:17
